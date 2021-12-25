@@ -1,0 +1,56 @@
+A-IM&&Acceptable instance-manipulations for the request.&&A-IM: feed&& && 
+Accept&&Media type(s) that is/are acceptable for the response. See Content negotiation.&&Accept: text/html&& &&
+Accept-Charset&&Character sets that are acceptable.&&Accept-Charset: utf-8&& &&
+Accept-Datetime&&Acceptable version in time.&&Accept-Datetime: Thu, 31 May 2007 20:35:00 GMT&& &&
+Accept-Encoding&&List of acceptable encodings. See HTTP compression.&&Accept-Encoding: gzip, deflate&& &&
+Accept-Language&&List of acceptable human languages for response. See Content negotiation.&&Accept-Language: en-US&& &&
+Access-Control-Request-Method&& && && &&
+Access-Control-Request-Headers&&Initiates a request for cross-origin resource sharing with Origin (below).&&Access-Control-Request-Method: GET&& &&
+Authorization&&Authentication credentials for HTTP authentication.&&Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==&& &&
+Cache-Control&&Used to specify directives that must be obeyed by all caching mechanisms along the request-response chain.&&Cache-Control: no-cache&& &&
+Connection&&Control options for the current connection and list of hop-by-hop request fields. Must not be used with HTTP/2.&&Connection: keep-alive&& &&
+Content-Encoding&&The type of encoding used on the data. See HTTP compression.&&Content-Encoding: gzip&& &&
+Content-Length&&The length of the request body in octets (8-bit bytes).&&Content-Length: 348&& &&
+Content-MD5&&A Base64-encoded binary MD5 sum of the content of the request body.&&Content-MD5: Q2hlY2sgSW50ZWdyaXR5IQ==&& &&
+Content-Type&&The Media type of the body of the request (used with POST and PUT requests).&&Content-Type: application/x-www-form-urlencoded&& &&
+Cookie&&An HTTP cookie previously sent by the server with Set-Cookie (below).&&Cookie: $Version=1; Skin=new;&& &&
+Date&&The date and time at which the message was originated (in "HTTP-date" format as defined by RFC 7231 Date/Time Formats).&&Date: Tue, 15 Nov 1994 08:12:31 GMT&& &&
+Expect&&Indicates that particular server behaviors are required by the client.&&Expect: 100-continue&& &&
+Forwarded&&Disclose original information of a client connecting to a web server through an HTTP proxy.&&Forwarded: for=192.0.2.60;proto=http;by=203.0.113.43 Forwarded: for=192.0.2.43, for=198.51.100.17&& &&
+From&&The email address of the user making the request.&&From: user@example.com&& &&
+Host&&The domain name of the server (for virtual hosting), and the TCP port number on which the server is listening. The port number may be omitted if the port is the standard port for the service requested. Mandatory since HTTP/1.1. If the request is generated directly in HTTP/2, it should not be used.&&Host: en.wikipedia.org:8080&& &&
+HTTP2-Settings&&A request that upgrades from HTTP/1.1 to HTTP/2 MUST include exactly one HTTP2-Setting header field. The HTTP2-Settings header field is a connection-specific header field that includes parameters that govern the HTTP/2 connection, provided in anticipation of the server accepting the request to upgrade.&&HTTP2-Settings: token64&& &&
+If-Match&&Only perform the action if the client supplied entity matches the same entity on the server. This is mainly for methods like PUT to only update a resource if it has not been modified since the user last updated it.&&If-Match: "737060cd8c284d8af7ad3082f209582d"&& &&
+If-Modified-Since&&Allows a 304 Not Modified to be returned if content is unchanged.&&If-Modified-Since: Sat, 29 Oct 1994 19:43:31 GMT&& &&
+If-None-Match&&Allows a 304 Not Modified to be returned if content is unchanged, see HTTP ETag.&&If-None-Match: "737060cd8c284d8af7ad3082f209582d"&& &&
+If-Range&&If the entity is unchanged, send me the part(s) that I am missing; otherwise, send me the entire new entity.&&If-Range: "737060cd8c284d8af7ad3082f209582d"&& &&
+If-Unmodified-Since&&Only send the response if the entity has not been modified since a specific time.&&If-Unmodified-Since: Sat, 29 Oct 1994 19:43:31 GMT&& &&
+Max-Forwards&&Limit the number of times the message can be forwarded through proxies or gateways.&&Max-Forwards: 10&& &&
+Origin&&Initiates a request for cross-origin resource sharing (asks server for Access-Control-* response fields).&&Origin: http://www.example-social-network.com&& &&
+Pragma&&Implementation-specific fields that may have various effects anywhere along the request-response chain.&&Pragma: no-cache&& &&
+Prefer&&Allows client to request that certain behaviors be employed by a server while processing a request.&&Prefer: return=representation&& &&
+Proxy-Authorization&&Authorization credentials for connecting to a proxy.&&Proxy-Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==&& &&
+Range&&Request only part of an entity. Bytes are numbered from 0. See Byte serving.&&Range: bytes=500-999&& &&
+Referer This is the address of the previous web page from which a link to the currently requested page was followed. (The word "referrer" has been misspelled in the RFC as well as in most implementations to the point that it has become standard usage and is considered correct terminology)&&Referer: http://en.wikipedia.org/wiki/Main_Page&& &&
+TE&&The transfer encodings the user agent is willing to accept: the same values as for the response header field Transfer-Encoding can be used, plus the "trailers" value (related to the "chunked" transfer method) to notify the server it expects to receive additional fields in the trailer after the last, zero-sized, chunk.Only trailers is supported in HTTP/2.&&TE: trailers, deflate&& &&
+Trailer&&The Trailer general field value indicates that the given set of header fields is present in the trailer of a message encoded with chunked transfer coding.&&Trailer: Max-Forwards&& &&
+Transfer-Encoding&&The form of encoding used to safely transfer the entity to the user. Currently defined methods are: chunked, compress, deflate, gzip, identity. Must not be used with HTTP/2.&&Transfer-Encoding: chunked&& && 
+User-Agent&&The user agent string of the user agent.&&User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20100101 Firefox/12.0&& &&
+Upgrade&&Ask the server to upgrade to another protocol. Must not be used in HTTP/2.&& Upgrade: h2c, HTTPS/1.3, IRC/6.9, RTA/x11, websocket&& && 
+Via&&Informs the server of proxies through which the request was sent.&&Via: 1.0 fred, 1.1 example.com (Apache/1.1)&& &&
+Warning&&A general warning about possible problems with the entity body.&&Warning: 199 Miscellaneous warning && &&
+Upgrade-Insecure-Requests&&Tells a server which (presumably in the middle of a HTTP -> HTTPS migration) hosts mixed content that the client would prefer redirection to HTTPS and can handle Content-Security-Policy: upgrade-insecure-requests&&Upgrade-Insecure-Requests: 1 && &&
+X-Requested-With&&Mainly used to identify Ajax requests (most JavaScript frameworks send this field with value of XMLHttpRequest); also identifies Android apps using WebView&&X-Requested-With: XMLHttpRequest && &&
+DNT&&Requests a web application to disable their tracking of a user. This is Mozilla's version of the X-Do-Not-Track header field (since Firefox 4.0 Beta 11). Safari and IE9 also have support for this field. &&DNT: 1 (Do Not Track Enabled), DNT: 0 (Do Not Track Disabled) && &&
+X-Forwarded-For&&A de facto standard for identifying the originating IP address of a client connecting to a web server through an HTTP proxy or load balancer. Superseded by Forwarded header.&&X-Forwarded-For: client1, proxy1, proxy2; X-Forwarded-For: 129.78.138.66, 129.78.64.103 && &&
+X-Forwarded-Host&&A de facto standard for identifying the original host requested by the client in the Host HTTP request header, since the host name and/or port of the reverse proxy (load balancer) may differ from the origin server handling the request. Superseded by Forwarded header.&&X-Forwarded-Host: en.wikipedia.org:8080; X-Forwarded-Host: en.wikipedia.org && &&
+X-Forwarded-Proto&&A de facto standard for identifying the originating protocol of an HTTP request, since a reverse proxy (or a load balancer) may communicate with a web server using HTTP even if the request to the reverse proxy is HTTPS. An alternative form of the header (X-ProxyUser-Ip) is used by Google clients talking to Google servers. Superseded by Forwarded header.&&X-Forwarded-Proto: https && &&
+Front-End-Https&&Non-standard header field used by Microsoft applications and load-balancers&&Front-End-Https: on && &&
+X-Http-Method-Override&&Requests a web application to override the method specified in the request (typically POST) with the method given in the header field (typically PUT or DELETE). This can be used when a user agent or firewall prevents PUT or DELETE methods from being sent directly.&&X-HTTP-Method-Override: DELETE && &&
+X-ATT-DeviceId&&Allows easier parsing of the MakeModel/Firmware that is usually found in the User-Agent String of AT&T Devices&&X-Att-Deviceid: GT-P7320/P7320XXLPG && &&
+X-Wap-Profile&&Links to an XML file on the Internet with a full description and details about the device currently connecting. In the example to the right is an XML file for an AT&T Samsung Galaxy S2.&&x-wap-profile: http://wap.samsungmobile.com/uaprof/SGH-I777.xml && &&
+Proxy-Connection&&Implemented as a misunderstanding of the HTTP specifications. Common because of mistakes in implementations of early HTTP versions. Has exactly the same functionality as standard Connection field.&&Proxy-Connection: keep-alive && &&
+X-UIDH&&Server-side deep packet insertion of a unique ID identifying customers of Verizon Wireless; also known as "perma-cookie" or "supercookie"&&X-UIDH: ... && &&
+X-Csrf-Token&&Used to prevent cross-site request forgery. Alternative header names are: X-CSRFToken and X-XSRF-TOKEN&&X-Csrf-Token: i8XNjC4b8KVok4uw5RftR38Wgp2BFwql && &&
+X-Request-ID&& && && &&
+X-Correlation-ID&&Correlates HTTP requests between a client and server.&&X-Request-ID: f058ebd6-02f7-4d3f-942e-904344e8cde5 && &&
