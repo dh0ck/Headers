@@ -63,3 +63,5 @@ X-Request-ID&&Correlates HTTP requests between a client and server.&& && &&
 X-Correlation-ID&&Correlates HTTP requests between a client and server.&&X-Request-ID: f058ebd6-02f7-4d3f-942e-904344e8cde5&& &&
 X-UA-Compatible&&Recommends the preferred rendering engine (often a backward-compatibility mode) to use to display the content. Also used to activate Chrome Frame in Internet Explorer. In HTML Standard, only the IE=edge value is defined.&&X-UA-Compatible: IE=edge&& &&
 X-XSS-Protection&&Cross-site scripting (XSS) filter&&X-XSS-Protection: 1; mode=block&& &&
+X-Azure-OriginStatusCode&&This header contains the HTTP status code returned by the backend&&X-Azure-OriginStatusCode: 503&& &&
+X-Azure-ExternalError&&This header shows the error code that Front Door servers come across while establishing connectivity to the backend server to process a request.&&X-Azure-ExternalError: 0x830c1011, The certificate authority is unfamiliar&& &&
