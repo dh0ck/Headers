@@ -1,9 +1,9 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
 import shutil, glob
-from javax.swing import JFrame, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
-from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point  # quitar los layout que no utilice
+from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component  # quitar los layout que no utilice
 from java.util import List, ArrayList
 from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener
@@ -29,22 +29,19 @@ class IssueTableModel(DefaultTableModel):
         return canEdit[column]
         # return False
 
-    def getColumnClass(self, column):
+    '''def getColumnClass(self, column):
         """Returns the column data class. Optional in this case."""
         from java.lang import Integer, String, Object
         # return Object if you don't know the type.
         # only works if we are not changing the number of columns
         columnClasses = [String, String]#[Integer, String, String, String, String]
-        return columnClasses[column]
+        return columnClasses[column]'''
 
 
 class IssueTableMouseListener(MouseListener):
-    """https://docs.oracle.com/javase/8/docs/api/java/awt/event/MouseListener.html
-    Custom mouse listener to differentiate between single and double-clicks.
-    """
-    def __init__(self):
+    '''def __init__(self):
         print("uuuuuuuuuuuuuuu")
-        return
+        return'''
 
     def getClickedIndex(self, event):
         """Returns the value of the first column of the table row that was
@@ -65,13 +62,13 @@ class IssueTableMouseListener(MouseListener):
         print(tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()))
         return tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
-    def mousePressed(self, event):
+    '''def mousePressed(self, event):
         # print "mouse pressed", event.getClickCount()
         pass
 
     def mouseReleased(self, event):
         # print "mouse released", event.getClickCount()
-        pass
+        pass'''
 
     # event.getClickCount() returns the number of clicks.
     def mouseClicked(self, event):
@@ -85,6 +82,7 @@ class IssueTableMouseListener(MouseListener):
             # open the dialog to edit
             print("double-click: ", self.getClickedRow(event))
 
+    # the following two are necessary, although they are empty, otherwise the extension crashes when the mouse cursor enters or exits the table
     def mouseEntered(self, event):
         pass
 
@@ -199,6 +197,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   # ARREGLAR NOMBRES DE VARIABLES
 
+  def save_json(self):
+    print("save json!")
+    return
   
 
   def getUiComponent(self):
@@ -212,25 +213,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     y_pos =0#+= 1
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
-    self.filter_but = JButton("Go!", actionPerformed = self.filter_entries)
+    self.filter_but = JButton("Update table", actionPerformed = self.filter_entries)
     JPanel1.add( self.filter_but, c )
-
-    c = GridBagConstraints()
-    c.gridx = 1 # third column
-    y_pos =0#+= 1
-    c.gridy = y_pos
-    c.anchor = GridBagConstraints.WEST
-    self.clear_but = JButton("Clear", actionPerformed = self.clear_table)
-    JPanel1.add( self.clear_but, c )
 
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
-    c.gridx = 2 # third column
+    c.gridx = 1 # third column
     c.gridy = y_pos
     self.filter = JTextField('Filter...')
     JPanel1.add(self.filter , c )
-
     
     c = GridBagConstraints()
     y_pos =0
@@ -260,23 +252,19 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.BOTH
 
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
-    self.colNames = ('Header name','Appears in...')
-    self.dataModel_tab_req = IssueTableModel([["",""]], self.colNames) # no haria falta porque el ya desde issueTable llama a la clase issueTableModel, pero lo normal es si necesitarlo para el DefaultDataMdodel
-    #self.dataModel_tab_req = DefaultTableModel([["",""]], self.colNames)
+    self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in...</b></html>')
 
-    ### cambiar aqui los table models
-    #self.table_tab_req = JTable(self.dataModel_tab_req)
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req)
-    #self.table_tab_req = IssueTable([["",""]], self.colNames)
-    self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(50)
-    self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(1100)
 
-    self.dataModel_tab_resp = IssueTableModel([["",""]], self.colNames)
-    #self.dataModel_tab_resp = DefaultTableModel([["",""]], self.colNames)
-    self.table_tab_resp = JTable(self.dataModel_tab_resp)
-    self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(50)
-    self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(1100)
+    self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(100)
+    self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(300)
+
+    self.model_tab_resp = IssueTableModel([["",""]], self.colNames)
+    self.table_tab_resp = IssueTable(self.model_tab_resp)
+
+    self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(100)
+    self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(300)
 
     # IMPORTANT: tables must be inside a JScrollPane so that the Table headers (that is, the columns names) are visible!!!
     panelTab_req = JPanel(BorderLayout()) 
@@ -288,7 +276,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.tab_tabs.addTab('Requests', panelTab_req)
     self.tab_tabs.addTab('Responses', panelTab_resp)
 
-    panel.add(JScrollPane(self.tab_tabs),c)
+    #panel.add(JScrollPane(self.tab_tabs),c)
+    splt = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), JTextArea()) 
+    splt.setDividerLocation(700)
+    panel.add(splt, c)
 
     # ================== Add text area ===================== #
     c = GridBagConstraints()
@@ -299,11 +290,41 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.HORIZONTAL
     text_area1 = JTextArea("",rows=5, editable=True)
     panel.add( text_area1 , c)
+
+    # ================== Add saving to file ===================== #
+    JPanel2 = JPanel(GridBagLayout())
+
+    
+    c = GridBagConstraints()
+    c.fill = GridBagConstraints.HORIZONTAL
+    c.weightx = 0
+    c.gridx = 1 # third column
+    c.gridy = y_pos
+    self.filter = JTextField('Save headers to... (full path)')
+    JPanel2.add(self.filter , c )
+    
+    c = GridBagConstraints()
+    c.gridx = 0 # third column
+    #y_pos += 1
+    c.gridy = y_pos
+    c.anchor = GridBagConstraints.WEST
+    self.filter_but = JButton("Save headers", actionPerformed = self.save_json)
+    JPanel2.add( self.filter_but, c )
+
+    c = GridBagConstraints()
+    y_pos += 1
+    c.gridy = y_pos 
+    c.fill = GridBagConstraints.HORIZONTAL
+    c.anchor = GridBagConstraints.WEST
+    panel.add( JPanel2 , c)
+
+
+
     return panel
 
-  def clear_table(self, event):
-    self.dataModel_tab_req.setRowCount(0)
-    self.dataModel_tab_resp.setRowCount(0)
+  def clear_table(self):
+    self.model_tab_req.setRowCount(0)
+    self.model_tab_resp.setRowCount(0)
     self.for_table = []
     self.for_req_table = []
     self.for_resp_table = []
@@ -316,9 +337,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
   def filter_entries(self, event):
+
+    self.clear_table()
+
     history = self._callbacks.getProxyHistory()
     for k, item in enumerate(history):
-
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
       
@@ -360,11 +383,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       if keys == req_keys:
         self.for_table = self.for_req_table
         self.header_dict = self.req_header_dict
-        self.dataModel_tab = self.model_tab_req#self.dataModel_tab_req
+        self.dataModel_tab = self.model_tab_req
       else:
         self._for_table = self.for_resp_table
         self.header_dict = self.resp_header_dict
-        self.dataModel_tab = self.dataModel_tab_resp
+        self.dataModel_tab = self.model_tab_resp
 
       for key in keys:
         for k1, host in enumerate(self.header_dict[key]):
@@ -377,20 +400,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               self.for_table.append(["", host])
               if key not in self.headers_already_in_table:
                 self.headers_already_in_table.append(key)
-        #self.for_table.append(['-'*30, '-'*30])
         self.for_table.append(['<html><b><font color="orange">' + '='*300 + '</font></b></html>', '<html><b><font color="orange">' + '='*300 + '</font></b></html>'*300])
-      
     
       for table_entry in self.for_table[self.last_len:]:
         self.dataModel_tab.insertRow(self.last_row, table_entry)
-        #self.dataModel_tab.insertRow(self.last_row, table_entry)
         self.last_row += 1
       self.last_row = 0
       self.for_table = []
     self.last_len = len(history)
-
     return
-
 
   def createMenuItems(self, context_menu):
     self.context = context_menu
@@ -405,7 +423,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.new_header_url.getText() +  "&&" + \
     self.new_header_risks.getText()
     self.to_submit_text.setLineWrap(True)
-
     self.to_submit_text.setText(final_text)
     return
 
@@ -421,7 +438,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       dict_req_headers[header_name] = header_description
     req_headers_description.close()
 
-
     dict_resp_headers = {}
     resp_headers_description = open('response_headers.txt','r')
     for line in resp_headers_description.readlines():
@@ -431,7 +447,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       dict_resp_headers[header_name] = header_description
     resp_headers_description.close()
 
-
     # ------------- create tablas ------------------#
      
     http_traffic = self.context.getSelectedMessages()
@@ -439,7 +454,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.tableDataResp = []
     self.aux_names_req = []
     self.aux_names_resp = []
-    
     
     for traffic in http_traffic:
       request = self._helpers.bytesToString(traffic.getRequest()).split('\r\n\r\n')[0]
@@ -459,7 +473,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         except:
           description = " --- Description unavailable --- "
         if req_head_name not in self.aux_names_req:
-          #self.tableDataReq.append(['<html><b><font color="#0077cc">' + req_head_name + '</font></b></html>', description, host])
           self.tableDataReq.append(['<html><b><font color="orange">'+ req_head_name + '</b></font></html>', description, host])
         self.aux_names_req.append(req_head_name)
     
@@ -485,7 +498,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     tab2 = JPanel()
 
     frame = JFrame("Headers info")
-    frame.setSize(850, 330)
+    frame.setSize(850, 350)
     colNames = ('Header name','Header description')
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
 
@@ -518,7 +531,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     panelTab1.add(JScrollPane(self.tableReq))
     panelTab2 = JPanel(BorderLayout()) 
     panelTab2.add(JScrollPane(self.tableResp))
-    
     panelTab3 = JPanel(GridBagLayout())
 
     # ======================================================== #
@@ -553,6 +565,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.anchor = GridBagConstraints.WEST
     text1 = JLabel("www.github.com/dh0ck/XXX with the generated text, or send it to @dh0ck via telegram.")
     panelTab3.add(text1 ,c)
+
+    c = GridBagConstraints()
+    c.gridx = 1 
+    y_pos += 1
+    c.gridy = y_pos 
+    c.anchor = GridBagConstraints.WEST
+    text1 = JLabel("Alternatively, add these lines to your local file request_headers.txt and response_headers.txt")
+    panelTab3.add(text1 ,c)
+
 
     c = GridBagConstraints()
     c.gridx = 1 
@@ -595,7 +616,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       
       panelTab3.add(fields[k] , c )
 
-
     # ======================= add button ================================= #
 
     c = GridBagConstraints()
@@ -622,17 +642,23 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     # ========================= about panel =============================== #
     panelTab4 = JPanel()
     panelTab4.setLayout(BoxLayout(panelTab4, BoxLayout.Y_AXIS ) )
-    a1 = "Thank you for using Headers\n"
-    a2 = "For tutorials, please visit:\n"
-    a3 = "<html><a href = XXX medium>Written tutorial</a></html>\n"
-    a4 = "<html><a href = XXX Video>Video tutorial</a></html>\n"
-    a5 = "\n "
-    a6 = "If you have requests or suggestions please let me know via telegram (@dh0ck) or send pull requests to the GitHub repo.\n"
-    a7 = "\n "
+    
+    a1 = "    Thank you for using Headers"
+    a2 = "    For tutorials, please visit:"
+    a3 = "    <html><a href = XXX medium>Written tutorial</a></html>"
+    a4 = "    <html><a href = XXX Video>Video tutorial</a></html>"
+    a5 = " "
+    a6 = "    If you have requests or suggestions please let me know via telegram (@dh0ck) or send pull requests to the GitHub repo."
+    a7 = " "
+    a8 = "    Acknoledegments: I adapted some code from: https://github.com/parsiya/Parsia-Code/tree/master/jython-swing-2/07-ObjectTableModel"
+    a9 = " "
 
-    for label in [a1, a2, a3, a4, a5, a6, a7]:
+    for label in [a1, a2, a3, a4, a5, a6, a7, a8, a9]:
       panelTab4.add(JLabel(label))
-    panelTab4.add(JButton("Update headers info", actionPerformed=self.UpdateHeaders ))
+
+    panelTab4.add(JButton("Update headers info", actionPerformed=self.UpdateHeaders))
+
+    
 
     tabs = JTabbedPane() 
     tabs.addTab('Requests', panelTab1)
