@@ -6,7 +6,109 @@ from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, Table
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point  # quitar los layout que no utilice
 from java.util import List, ArrayList
 from java.awt.event.MouseEvent import getPoint
+from java.awt.event import MouseListener
 
+
+
+#/////////////////////////////////////////////////////
+
+class IssueTableModel(DefaultTableModel):
+    """Extends the DefaultTableModel to make it readonly (among other
+    things)."""
+
+    def __init__(self, data, headings):
+        # call the DefaultTableModel constructor to populate the table
+        DefaultTableModel.__init__(self, data, headings)
+        print('issute table model instantiated')
+
+    def isCellEditable(self, row, column):
+        """Returns True if cells are editable."""
+        # make all rows and columns uneditable.
+        # do we need to check the column value here?
+        canEdit = [False, False]#, False, False, False]
+        return canEdit[column]
+        # return False
+
+    def getColumnClass(self, column):
+        """Returns the column data class. Optional in this case."""
+        from java.lang import Integer, String, Object
+        # return Object if you don't know the type.
+        # only works if we are not changing the number of columns
+        columnClasses = [String, String]#[Integer, String, String, String, String]
+        return columnClasses[column]
+
+
+class IssueTableMouseListener(MouseListener):
+    """https://docs.oracle.com/javase/8/docs/api/java/awt/event/MouseListener.html
+    Custom mouse listener to differentiate between single and double-clicks.
+    """
+    def __init__(self):
+        print("uuuuuuuuuuuuuuu")
+        return
+
+    def getClickedIndex(self, event):
+        """Returns the value of the first column of the table row that was
+        clicked. This is not the same as the row index because the table
+        can be sorted."""
+        # get the event source, the table in this case.
+        tbl = event.getSource()
+        # get the clicked row
+        row = tbl.getSelectedRow()
+        # get the first value of clicked row
+        return tbl.getValueAt(row, 0)
+        # return event.getSource.getValueAt(event.getSource().getSelectedRow(), 0)
+
+    def getClickedRow(self, event):
+        """Returns the complete clicked row."""
+        tbl = event.getSource()
+        print("get clicked row was clicked")
+        print(tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()))
+        return tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+
+    def mousePressed(self, event):
+        # print "mouse pressed", event.getClickCount()
+        pass
+
+    def mouseReleased(self, event):
+        # print "mouse released", event.getClickCount()
+        pass
+
+    # event.getClickCount() returns the number of clicks.
+    def mouseClicked(self, event):
+        if event.getClickCount() == 1:
+            # print "single-click. clicked index:", self.getClickedRow(event)
+
+            # modify the items in the panel
+            print("single-click: ", self.getClickedRow(event))
+
+        if event.getClickCount() == 2:
+            # open the dialog to edit
+            print("double-click: ", self.getClickedRow(event))
+
+    def mouseEntered(self, event):
+        pass
+
+    def mouseExited(self, event):
+        pass
+
+
+class IssueTable(JTable):
+    """Issue table."""
+
+    #def __init__(self, data, headers):
+    def __init__(self, model):
+        print('issue table instantiated')
+        # set the table model
+        ##model = IssueTableModel(data, headers)
+        self.setModel(model)
+        self.setAutoCreateRowSorter(True)
+        # disable the reordering of columns
+        self.getTableHeader().setReorderingAllowed(False)
+        # assign panel to a field
+        self.addMouseListener(IssueTableMouseListener())
+        print("clicked imported")
+
+#/////////////////////////////////////////////////////
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
@@ -95,6 +197,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     return
 
+  # ARREGLAR NOMBRES DE VARIABLES
+
+  
 
   def getUiComponent(self):
     panel = JPanel(GridBagLayout())
@@ -123,7 +228,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.weightx = 1
     c.gridx = 2 # third column
     c.gridy = y_pos
-    self.filter = JTextField('')
+    self.filter = JTextField('Filter...')
     JPanel1.add(self.filter , c )
 
     
@@ -156,15 +261,23 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
     self.colNames = ('Header name','Appears in...')
-    self.dataModel_tab_req = DefaultTableModel([["",""]], self.colNames)
-    self.table_tab_req = JTable(self.dataModel_tab_req)
+    self.dataModel_tab_req = IssueTableModel([["",""]], self.colNames) # no haria falta porque el ya desde issueTable llama a la clase issueTableModel, pero lo normal es si necesitarlo para el DefaultDataMdodel
+    #self.dataModel_tab_req = DefaultTableModel([["",""]], self.colNames)
+
+    ### cambiar aqui los table models
+    #self.table_tab_req = JTable(self.dataModel_tab_req)
+    self.model_tab_req = IssueTableModel([["",""]], self.colNames)
+    self.table_tab_req = IssueTable(self.model_tab_req)
+    #self.table_tab_req = IssueTable([["",""]], self.colNames)
     self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(50)
     self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(1100)
 
-    self.dataModel_tab_resp = DefaultTableModel([["",""]], self.colNames)
+    self.dataModel_tab_resp = IssueTableModel([["",""]], self.colNames)
+    #self.dataModel_tab_resp = DefaultTableModel([["",""]], self.colNames)
     self.table_tab_resp = JTable(self.dataModel_tab_resp)
     self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(50)
     self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(1100)
+
     # IMPORTANT: tables must be inside a JScrollPane so that the Table headers (that is, the columns names) are visible!!!
     panelTab_req = JPanel(BorderLayout()) 
     panelTab_req.add(JScrollPane(self.table_tab_req))
@@ -241,15 +354,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     # el siguiente ya contiene toda la history, no pensar en que vienen otras request luego, ya estan todas
     req_keys = sorted(list(self.req_header_dict.keys()))
     resp_keys = sorted(list(self.resp_header_dict.keys()))
-    print(req_keys)
-    print(resp_keys)
-    print([req_keys, resp_keys])
+
     for keys in [req_keys, resp_keys]: # seguro que esto hace lo que debe? es un array de 2 arrays, no uno solo con todas las keys, ok, creo que esto lo puse asi para no duplicar el bloque de abajo y hacer lo mismo para requests y responses con este for sin duplicar codigo, era por eso, 100% seguro
       
       if keys == req_keys:
         self.for_table = self.for_req_table
         self.header_dict = self.req_header_dict
-        self.dataModel_tab = self.dataModel_tab_req
+        self.dataModel_tab = self.model_tab_req#self.dataModel_tab_req
       else:
         self._for_table = self.for_resp_table
         self.header_dict = self.resp_header_dict
@@ -272,6 +383,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
       for table_entry in self.for_table[self.last_len:]:
         self.dataModel_tab.insertRow(self.last_row, table_entry)
+        #self.dataModel_tab.insertRow(self.last_row, table_entry)
         self.last_row += 1
       self.last_row = 0
       self.for_table = []
@@ -296,8 +408,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.to_submit_text.setText(final_text)
     return
-
-
 
   def show_window(self,event):
 
@@ -517,11 +627,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     a3 = "<html><a href = XXX medium>Written tutorial</a></html>\n"
     a4 = "<html><a href = XXX Video>Video tutorial</a></html>\n"
     a5 = "\n "
-    a6 = "If you have requests or suggestions,\n"
-    a7 = "please let me know via telegram (@dh0ck) or send pull requests to the GitHub repo.\n"
-    a8 = "\n "
+    a6 = "If you have requests or suggestions please let me know via telegram (@dh0ck) or send pull requests to the GitHub repo.\n"
+    a7 = "\n "
 
-    for label in [a1, a2, a3, a4, a5, a6, a7, a8]:
+    for label in [a1, a2, a3, a4, a5, a6, a7]:
       panelTab4.add(JLabel(label))
     panelTab4.add(JButton("Update headers info", actionPerformed=self.UpdateHeaders ))
 
