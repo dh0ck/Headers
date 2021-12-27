@@ -8,6 +8,16 @@ from java.util import List, ArrayList
 from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener
 
+# el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se cree un nuevo frame por cada doble click
+extra_info = JFrame("Extended header info")
+#extra_info.setLayout(BoxLayout())
+extra_info.setSize(400, 750)
+extra_info.toFront()
+extra_info.setAlwaysOnTop(True)
+extra_info_label1 = JTextArea("test1",rows=5, editable=True)
+extra_info_label1.setLineWrap(True)
+extra_info.add(JScrollPane(extra_info_label1))
+
 
 
 #/////////////////////////////////////////////////////
@@ -39,9 +49,6 @@ class IssueTableModel(DefaultTableModel):
 
 
 class IssueTableMouseListener(MouseListener):
-    '''def __init__(self):
-        print("uuuuuuuuuuuuuuu")
-        return'''
 
     def getClickedIndex(self, event):
         """Returns the value of the first column of the table row that was
@@ -62,13 +69,11 @@ class IssueTableMouseListener(MouseListener):
         print(tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()))
         return tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
-    '''def mousePressed(self, event):
-        # print "mouse pressed", event.getClickCount()
-        pass
+    def mousePressed(self, event):
+      pass
 
     def mouseReleased(self, event):
-        # print "mouse released", event.getClickCount()
-        pass'''
+      pass
 
     # event.getClickCount() returns the number of clicks.
     def mouseClicked(self, event):
@@ -77,10 +82,15 @@ class IssueTableMouseListener(MouseListener):
 
             # modify the items in the panel
             print("single-click: ", self.getClickedRow(event))
-
+            yy = self.getClickedRow(event)
+            print(type(yy))
+            extra_info_label1.setText(str(yy))
         if event.getClickCount() == 2:
             # open the dialog to edit
             print("double-click: ", self.getClickedRow(event))
+            #self.show_info_window()
+            extra_info.setVisible(True)
+
 
     # the following two are necessary, although they are empty, otherwise the extension crashes when the mouse cursor enters or exits the table
     def mouseEntered(self, event):
@@ -335,7 +345,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.last_len = 0
     return
 
-
   def filter_entries(self, event):
 
     self.clear_table()
@@ -426,7 +435,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.to_submit_text.setText(final_text)
     return
 
-  def show_window(self,event):
+  
+
+  def show_window(self, event):
 
     # ----------------------------------------- crear diccionarios ---------------------------------------------#
     dict_req_headers = {}
@@ -502,9 +513,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     colNames = ('Header name','Header description')
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
 
+
+    
+
+
+
     c=[x[0:2] for x in self.tableDataReq]      
-    dataModelReq = DefaultTableModel(c, colNames)
-    self.tableReq = JTable(dataModelReq)
+    self.model_window_req = IssueTableModel(c, self.colNames)
+    self.tableReq = IssueTable(self.model_window_req)
+    #dataModelReq = DefaultTableModel(c, colNames)
+    #self.tableReq = JTable(dataModelReq)
     self.tableReq.getColumnModel().getColumn(0).setPreferredWidth(200)
     self.tableReq.getColumnModel().getColumn(1).setPreferredWidth(800)
 
