@@ -1,10 +1,10 @@
 Accept-CH&&Requests HTTP Client Hints&&Accept-CH: UA, Platform&& &&
-Access-Control-Allow-Origin&&Specifies which web sites can participate in cross-origin resource sharing&& &&
-Access-Control-Allow-Credentials&&Specifies which web sites can participate in cross-origin resource sharing&& &&
-Access-Control-Expose-Headers&&Specifies which web sites can participate in cross-origin resource sharing&& &&   
-Access-Control-Max-Age&&Specifies which web sites can participate in cross-origin resource sharing&& &&  
-Access-Control-Allow-Methods&&Specifies which web sites can participate in cross-origin resource sharing&& &&  
-Access-Control-Allow-Headers&&Specifies which web sites can participate in cross-origin resource sharing&& &&     
+Access-Control-Allow-Origin&&Specifies which web sites can participate in cross-origin resource sharing&& && &&
+Access-Control-Allow-Credentials&&Specifies which web sites can participate in cross-origin resource sharing&& && &&
+Access-Control-Expose-Headers&&Specifies which web sites can participate in cross-origin resource sharing&& && && 
+Access-Control-Max-Age&&Specifies which web sites can participate in cross-origin resource sharing&& && && 
+Access-Control-Allow-Methods&&Specifies which web sites can participate in cross-origin resource sharing&& && && 
+Access-Control-Allow-Headers&&Specifies which web sites can participate in cross-origin resource sharing&& && &&    
 Accept-Patch&&Specifies which patch document formats this server supports&&Accept-Patch: text/example;charset=utf-8&& &&
 Accept-Ranges&&What partial content range types this server supports via byte serving&&Accept-Ranges: bytes&& &&
 Age&&The age the object has been in a proxy cache in seconds&&Age: 12&& &&
@@ -33,13 +33,13 @@ Pragma&&Implementation-specific fields that may have various effects anywhere al
 Preference-Applied&&Indicates which Prefer tokens were honored by the server and applied to the processing of the request.&&Preference-Applied: return=representation&& &&RFC 7240
 Proxy-Authenticate&&Request authentication to access the proxy.&&Proxy-Authenticate: Basic&& &&
 Public-Key-Pins&&HTTP Public Key Pinning, announces hash of website's authentic TLS certificate&&Public-Key-Pins: max-age=2592000; pin-sha256="E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=";&& &&
-Retry-After&&If an entity is temporarily unavailable, this instructs the client to try again later. Value could be a specified period of time (in seconds) or a HTTP-date.&&Retry-After: 120
+Retry-After&&If an entity is temporarily unavailable, this instructs the client to try again later. Value could be a specified period of time (in seconds) or a HTTP-date.&&Retry-After: 120&& &&
 Server&&A name for the server&&Server: Apache/2.4.1 (Unix)&& &&
 Set-Cookie&&An HTTP cookie&&Set-Cookie: UserID=JohnDoe; Max-Age=3600; Version=1&& &&
 Strict-Transport-Security&&A HSTS Policy informing the HTTP client how long to cache the HTTPS only policy and whether this applies to subdomains.&&Strict-Transport-Security: max-age=16070400; includeSubDomains&& &&
 Trailer&&The Trailer general field value indicates that the given set of header fields is present in the trailer of a message encoded with chunked transfer coding.&&Trailer: Max-Forwards&& &&
 Transfer-Encoding&&The form of encoding used to safely transfer the entity to the user. Currently defined methods are: chunked, compress, deflate, gzip, identity.&&Transfer-Encoding: chunked&& &&
-Tk&&Tracking Status header, value suggested to be sent in response to a DNT(do-not-track), possible values: "!" — under construction, "?" — dynamic, "G" — gateway to multiple parties, "N" — not tracking, "T" — tracking, "C" — tracking with consent, "P" — tracking only if consented, "D" — disregarding DNT, "U" — updated&&Tk: ?Upgrade&&Ask the client to upgrade to another protocol.&&Upgrade: h2c, HTTPS/1.3, IRC/6.9, RTA/x11, websocket&& &&
+Tk&&Tracking Status header, value suggested to be sent in response to a DNT(do-not-track), possible values: "!" — under construction, "?" — dynamic, "G" — gateway to multiple parties, "N" — not tracking, "T" — tracking, "C" — tracking with consent, "P" — tracking only if consented, "D" — disregarding DNT, "U" — updated&&Tk: ?Upgrade: Ask the client to upgrade to another protocol. Upgrade: h2c, HTTPS/1.3, IRC/6.9, RTA/x11, websocket&& &&
 Vary&&Tells downstream proxies how to match future request headers to decide whether the cached response can be used rather than requesting a fresh one from the origin server.&&Example Vary: *, Example 2: Vary: Accept-Language&& &&
 Via&&Informs the client of proxies through which the response was sent.&&Via: 1.0 fred, 1.1 example.com (Apache/1.1)&& &&
 Warning&&A general warning about possible problems with the entity body.&&Warning: 199 Miscellaneous warning&& &&

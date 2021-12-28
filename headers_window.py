@@ -11,14 +11,88 @@ from java.awt.event import MouseListener
 # el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se cree un nuevo frame por cada doble click
 extra_info = JFrame("Extended header info")
 #extra_info.setLayout(BoxLayout())
+extra_info_panel = JPanel()
+extra_info_panel.setLayout(BoxLayout(extra_info_panel, BoxLayout.Y_AXIS ) )
 extra_info.setSize(400, 750)
 extra_info.toFront()
 extra_info.setAlwaysOnTop(True)
-extra_info_label1 = JTextArea("test1",rows=5, editable=True)
-extra_info_label1.setLineWrap(True)
-extra_info.add(JScrollPane(extra_info_label1))
+
+extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
+extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
+
+extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
+extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
+extra_info_textarea2.setLineWrap(True)
+
+extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
+extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
+extra_info_textarea3.setLineWrap(True)
+
+extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
+extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
+extra_info_textarea4.setLineWrap(True)
+
+extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
+extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
+extra_info_textarea5.setLineWrap(True)
+
+extra_info_panel.add(extra_info_label1)
+extra_info_panel.add(JScrollPane(extra_info_textarea1))
+
+extra_info_panel.add(extra_info_label2)
+extra_info_panel.add(JScrollPane(extra_info_textarea2))
+
+extra_info_panel.add(extra_info_label3)
+extra_info_panel.add(JScrollPane(extra_info_textarea3))
+
+extra_info_panel.add(extra_info_label4)
+extra_info_panel.add(JScrollPane(extra_info_textarea4))
+
+extra_info_panel.add(extra_info_label5)
+extra_info_panel.add(JScrollPane(extra_info_textarea5))
 
 
+extra_info.add(extra_info_panel)
+
+dict_req_headers = {}
+req_headers_description = open('request_headers.txt','r')
+for line in req_headers_description.readlines():
+  line_split = line.split('&&')
+  header_name = line_split[0]
+  header_description = line_split[1]
+  if header_description.rstrip() == '':
+    header_description = 'Description unavailable for header: ' + header_name
+  header_example = line_split[2]
+  if header_example.rstrip() == '':
+    header_example = 'Example unavailable for header: ' + header_name
+  header_url = line_split[3]
+  if header_url.rstrip() == '':
+    header_url = 'URL unavailable for header ' + header_name
+  header_risk = line_split[4]
+  if header_risk.rstrip() == '':
+    header_risk = 'Potential risks information unavailable for header ' + header_name
+  dict_req_headers[header_name] = (header_description, header_example, header_url, header_risk)
+req_headers_description.close()
+
+dict_resp_headers = {}
+resp_headers_description = open('response_headers.txt','r')
+for line in resp_headers_description.readlines():
+  line_split = line.split('&&')
+  header_name = line_split[0]
+  header_description = line_split[1]
+  if header_description.rstrip() == '':
+    header_description = 'Description unavailable for header: ' + header_name
+  header_example = line_split[2]
+  if header_example.rstrip() == '':
+    header_example = 'Example unavailable for header: ' + header_name
+  header_url = line_split[3]
+  if header_url.rstrip() == '':
+    header_url = 'URL unavailable for header ' + header_name
+  header_risk = line_split[4]
+  if header_risk.rstrip() == '':
+    header_risk = 'Potential risks information unavailable for header ' + header_name
+  dict_resp_headers[header_name] = (header_description, header_example, header_url, header_risk)
+resp_headers_description.close()
 
 #/////////////////////////////////////////////////////
 
@@ -46,6 +120,7 @@ class IssueTableModel(DefaultTableModel):
         # only works if we are not changing the number of columns
         columnClasses = [String, String]#[Integer, String, String, String, String]
         return columnClasses[column]'''
+
 
 
 class IssueTableMouseListener(MouseListener):
@@ -81,13 +156,29 @@ class IssueTableMouseListener(MouseListener):
             # print "single-click. clicked index:", self.getClickedRow(event)
 
             # modify the items in the panel
-            print("single-click: ", self.getClickedRow(event))
-            yy = self.getClickedRow(event)
-            print(type(yy))
-            extra_info_label1.setText(str(yy))
+            #print("single-click: ", self.getClickedRow(event))
+            header = self.getClickedRow(event)
+            header = header[0].split('<font color="orange">')[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
+            extra_info_textarea1.setText(header)
+            if header in list(dict_req_headers.keys()) and header not in list(dict_resp_headers.keys()):
+              extra_info_textarea2.setText(dict_req_headers[header][0])
+              extra_info_textarea3.setText(dict_req_headers[header][1])
+              extra_info_textarea4.setText(dict_req_headers[header][2])
+              extra_info_textarea5.setText(dict_req_headers[header][3])
+            if header not in (list(dict_req_headers.keys())) and header not in list(dict_resp_headers.keys()):
+              print(header + 'xxxx')
+              extra_info_textarea2.setText('Description unavailable for header: ' + header)
+              extra_info_textarea3.setText('Example unavailable for header: ' + header)
+              extra_info_textarea4.setText('URL unavailable for header: ' + header)
+              extra_info_textarea5.setText('Potential risks unavailable for header: ' + header)
+            if header in list(dict_resp_headers.keys()):
+              extra_info_textarea2.setText(dict_resp_headers[header][0])
+              extra_info_textarea3.setText(dict_resp_headers[header][1])
+              extra_info_textarea4.setText(dict_resp_headers[header][2])
+              extra_info_textarea5.setText(dict_resp_headers[header][3])
         if event.getClickCount() == 2:
             # open the dialog to edit
-            print("double-click: ", self.getClickedRow(event))
+            #print("double-click: ", self.getClickedRow(event))
             #self.show_info_window()
             extra_info.setVisible(True)
 
@@ -539,8 +630,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
     d=[x[0:2] for x in self.tableDataResp]      
-    dataModelResp = DefaultTableModel(d, colNames)
-    self.tableResp = JTable(dataModelResp)
+    self.model_window_resp = IssueTableModel(d, self.colNames)
+    self.tableResp = IssueTable(self.model_window_resp)
+    #dataModelResp = DefaultTableModel(d, colNames)
+    #self.tableResp = JTable(dataModelResp)
     self.tableResp.getColumnModel().getColumn(0).setPreferredWidth(200)
     self.tableResp.getColumnModel().getColumn(1).setPreferredWidth(800)
     
