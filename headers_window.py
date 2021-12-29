@@ -13,43 +13,65 @@ extra_info = JFrame("Extended header info")
 #extra_info.setLayout(BoxLayout())
 extra_info_panel = JPanel()
 extra_info_panel.setLayout(BoxLayout(extra_info_panel, BoxLayout.Y_AXIS ) )
-extra_info.setSize(400, 750)
+extra_info.setSize(400, 350)
+extra_info.setLocation(840, 0)
 extra_info.toFront()
 extra_info.setAlwaysOnTop(True)
 
 extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
+extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
+scrollPane_1 = JScrollPane(extra_info_textarea1)
+scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
 
 extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
+extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
 extra_info_textarea2.setLineWrap(True)
+scrollPane_2 = JScrollPane(extra_info_textarea2)
+scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
+extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
 extra_info_textarea3.setLineWrap(True)
+scrollPane_3 = JScrollPane(extra_info_textarea3)
+scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
+extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
 extra_info_textarea4.setLineWrap(True)
+scrollPane_4 = JScrollPane(extra_info_textarea4)
+scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
+extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
 extra_info_textarea5.setLineWrap(True)
+scrollPane_5 = JScrollPane(extra_info_textarea5)
+scrollPane_5.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_panel.add(extra_info_label1)
-extra_info_panel.add(JScrollPane(extra_info_textarea1))
+extra_info_panel.add(scrollPane_1)
+#extra_info_panel.add(JScrollPane(extra_info_textarea1))
 
 extra_info_panel.add(extra_info_label2)
-extra_info_panel.add(JScrollPane(extra_info_textarea2))
+extra_info_panel.add(scrollPane_2)
+#extra_info_panel.add(JScrollPane(extra_info_textarea2))
 
 extra_info_panel.add(extra_info_label3)
-extra_info_panel.add(JScrollPane(extra_info_textarea3))
+extra_info_panel.add(scrollPane_3)
+#extra_info_panel.add(JScrollPane(extra_info_textarea3))
 
 extra_info_panel.add(extra_info_label4)
-extra_info_panel.add(JScrollPane(extra_info_textarea4))
+extra_info_panel.add(scrollPane_4)
+#extra_info_panel.add(JScrollPane(extra_info_textarea4))
 
 extra_info_panel.add(extra_info_label5)
-extra_info_panel.add(JScrollPane(extra_info_textarea5))
+extra_info_panel.add(scrollPane_5)
+#extra_info_panel.add(JScrollPane(extra_info_textarea5))
 
 
 extra_info.add(extra_info_panel)
@@ -200,7 +222,7 @@ class IssueTable(JTable):
         # set the table model
         ##model = IssueTableModel(data, headers)
         self.setModel(model)
-        self.setAutoCreateRowSorter(True)
+        #self.setAutoCreateRowSorter(True)
         # disable the reordering of columns
         self.getTableHeader().setReorderingAllowed(False)
         # assign panel to a field
