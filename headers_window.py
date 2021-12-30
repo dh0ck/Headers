@@ -24,7 +24,6 @@ extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
 scrollPane_1 = JScrollPane(extra_info_textarea1)
 scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
-
 extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
 extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
@@ -145,7 +144,7 @@ class IssueTableModel(DefaultTableModel):
 
 
 
-class IssueTableMouseListener(MouseListener):
+class IssueTableMouseListener_Window(MouseListener):
 
     def getClickedIndex(self, event):
         """Returns the value of the first column of the table row that was
@@ -162,9 +161,12 @@ class IssueTableMouseListener(MouseListener):
     def getClickedRow(self, event):
         """Returns the complete clicked row."""
         tbl = event.getSource()
-        print("get clicked row was clicked")
-        print(tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()))
-        return tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+        #print("XXXXXXXXXXHHH: ")
+        #print(tbl)
+        #print("------------")
+        #print("get clicked row was clicked")
+        #print(tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()))
+        return [tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()), tbl.getSelectedRow()]
 
     def mousePressed(self, event):
       pass
@@ -179,7 +181,8 @@ class IssueTableMouseListener(MouseListener):
 
             # modify the items in the panel
             #print("single-click: ", self.getClickedRow(event))
-            header = self.getClickedRow(event)
+            
+
             header = header[0].split('<font color="orange">')[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
             extra_info_textarea1.setText(header)
             if header in list(dict_req_headers.keys()) and header not in list(dict_resp_headers.keys()):
@@ -213,21 +216,71 @@ class IssueTableMouseListener(MouseListener):
         pass
 
 
-class IssueTable(JTable):
-    """Issue table."""
+class IssueTableMouseListener_Tab(MouseListener):
 
-    #def __init__(self, data, headers):
+    def getClickedIndex(self, event):
+        """Returns the value of the first column of the table row that was
+        clicked. This is not the same as the row index because the table
+        can be sorted."""
+        # get the event source, the table in this case.
+        tbl = event.getSource()
+        # get the clicked row
+        row = tbl.getSelectedRow()
+        # get the first value of clicked row
+        return tbl.getValueAt(row, 0)
+        # return event.getSource.getValueAt(event.getSource().getSelectedRow(), 0)
+
+    '''def getClickedRow(self, event):
+        """Returns the complete clicked row."""
+        tbl = event.getSource()
+        return tbl
+        #return [tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()), tbl.getSelectedRow()]'''
+
+    def mousePressed(self, event):
+      pass
+
+    def mouseReleased(self, event):
+      pass
+
+    # event.getClickCount() returns the number of clicks.
+    def mouseClicked(self, event):
+        if event.getClickCount() == 1:
+            
+            tbl = event.getSource()
+            val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+            
+            header = val[0]
+            k = tbl.getSelectedRow()
+            if header == '':
+              while header == '':
+                k -= 1
+                header = tbl.getModel().getDataVector().elementAt(k)[0]
+
+        # aqui header ya es el header bueno de la que se ha seleccionado, aunque no tuviera el header puesto en la fila si hay mas de una fila para el mismo header. ahora usarlo para buscar todos los endpoints uniques y ponerlos en la tabla self.table_endpoints (puede que haga falta quitar el self, por estar definido aqui fuera de la clase el click handler, y la tabla dentro de la otra clase??)
+
+            
+
+
+    # the following two are necessary, although they are empty, otherwise the extension crashes when the mouse cursor enters or exits the table
+    def mouseEntered(self, event):
+        pass
+
+    def mouseExited(self, event):
+        pass
+
+
+class IssueTable_Window(JTable):
     def __init__(self, model):
-        print('issue table instantiated')
-        # set the table model
-        ##model = IssueTableModel(data, headers)
         self.setModel(model)
-        #self.setAutoCreateRowSorter(True)
-        # disable the reordering of columns
         self.getTableHeader().setReorderingAllowed(False)
-        # assign panel to a field
-        self.addMouseListener(IssueTableMouseListener())
-        print("clicked imported")
+        self.addMouseListener(IssueTableMouseListener_Window())
+
+class IssueTable_Tab(JTable):
+    def __init__(self, model):
+        self.setModel(model)
+        self.getTableHeader().setReorderingAllowed(False)
+        self.addMouseListener(IssueTableMouseListener_Tab())
+
 
 #/////////////////////////////////////////////////////
 
@@ -378,16 +431,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in...</b></html>')
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
-    self.table_tab_req = IssueTable(self.model_tab_req)
+    self.table_tab_req = IssueTable_Tab(self.model_tab_req)
 
     self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(100)
-    self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(300)
+    self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(250)
 
     self.model_tab_resp = IssueTableModel([["",""]], self.colNames)
-    self.table_tab_resp = IssueTable(self.model_tab_resp)
+    self.table_tab_resp = IssueTable_Tab(self.model_tab_resp)
 
     self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(100)
-    self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(300)
+    self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(250)
 
     # IMPORTANT: tables must be inside a JScrollPane so that the Table headers (that is, the columns names) are visible!!!
     panelTab_req = JPanel(BorderLayout()) 
@@ -399,10 +452,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.tab_tabs.addTab('Requests', panelTab_req)
     self.tab_tabs.addTab('Responses', panelTab_resp)
 
-    #panel.add(JScrollPane(self.tab_tabs),c)
-    splt = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), JTextArea()) 
-    splt.setDividerLocation(700)
-    panel.add(splt, c)
+    # ================== Add endpoints table ===================== #
+    self.model_endpoints = IssueTableModel([["asf"],['456']], ["Endpoint"])
+    self.table_endpoints = JTable(self.model_endpoints)
+    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(JTable(self.model_endpoints)),JTextArea())#JTable(self.model_endpoints), JTextArea()) 
+    splt_2.setDividerLocation(300)
+
+    splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
+    splt_1.setDividerLocation(600)
+    panel.add(splt_1, c)
 
     # ================== Add text area ===================== #
     c = GridBagConstraints()
@@ -522,7 +580,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               self.for_table.append(["", host])
               if key not in self.headers_already_in_table:
                 self.headers_already_in_table.append(key)
-        self.for_table.append(['<html><b><font color="orange">' + '='*300 + '</font></b></html>', '<html><b><font color="orange">' + '='*300 + '</font></b></html>'*300])
+        self.for_table.append(['<html><b><font color="orange">' + '-'*300 + '</font></b></html>', '<html><b><font color="orange">' + '-'*300 + '</font></b></html>'*300])
     
       for table_entry in self.for_table[self.last_len:]:
         self.dataModel_tab.insertRow(self.last_row, table_entry)
@@ -633,7 +691,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     c=[x[0:2] for x in self.tableDataReq]      
     self.model_window_req = IssueTableModel(c, self.colNames)
-    self.tableReq = IssueTable(self.model_window_req)
+    self.tableReq = IssueTable_Window(self.model_window_req)
     #dataModelReq = DefaultTableModel(c, colNames)
     #self.tableReq = JTable(dataModelReq)
     self.tableReq.getColumnModel().getColumn(0).setPreferredWidth(200)
