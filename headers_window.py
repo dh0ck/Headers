@@ -8,7 +8,15 @@ from java.util import List, ArrayList
 from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener
 
-# el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se cree un nuevo frame por cada doble click
+
+#def initialize():
+burp_extender_instance = "" # variable global que sera el instance de bupr extender, para acceder a los valores de la instancia de IBurpExtender que burp crea, pero desde fuera, sobre todo para cambiar con clicks la tabla de endpoints
+history1 = []
+host_endpoint = [] #se rellena al darle a filter en la tab, pero habra que arreglar que no haya duplicados cuando cambian los valores de los query string  rameters (o puedo dejar que se repitan y ponerlos todos.) lo bueno seria poner tambien el index del history y en el text area poner los headers de la req  los de la resp, separados por una =========, etc
+endpoint_table = []
+
+
+# el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se  ee un nuevo frame por cada doble click
 extra_info = JFrame("Extended header info")
 #extra_info.setLayout(BoxLayout())
 extra_info_panel = JPanel()
@@ -17,64 +25,46 @@ extra_info.setSize(400, 350)
 extra_info.setLocation(840, 0)
 extra_info.toFront()
 extra_info.setAlwaysOnTop(True)
-
 extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
 extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
 scrollPane_1 = JScrollPane(extra_info_textarea1)
 scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
 extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
 extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
 extra_info_textarea2.setLineWrap(True)
 scrollPane_2 = JScrollPane(extra_info_textarea2)
 scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
 extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
 extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
 extra_info_textarea3.setLineWrap(True)
 scrollPane_3 = JScrollPane(extra_info_textarea3)
 scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
 extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
 extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
 extra_info_textarea4.setLineWrap(True)
 scrollPane_4 = JScrollPane(extra_info_textarea4)
 scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
 extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
 extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
 extra_info_textarea5.setLineWrap(True)
 scrollPane_5 = JScrollPane(extra_info_textarea5)
 scrollPane_5.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
 extra_info_panel.add(extra_info_label1)
 extra_info_panel.add(scrollPane_1)
-#extra_info_panel.add(JScrollPane(extra_info_textarea1))
-
 extra_info_panel.add(extra_info_label2)
 extra_info_panel.add(scrollPane_2)
-#extra_info_panel.add(JScrollPane(extra_info_textarea2))
-
 extra_info_panel.add(extra_info_label3)
 extra_info_panel.add(scrollPane_3)
-#extra_info_panel.add(JScrollPane(extra_info_textarea3))
-
 extra_info_panel.add(extra_info_label4)
 extra_info_panel.add(scrollPane_4)
-#extra_info_panel.add(JScrollPane(extra_info_textarea4))
-
 extra_info_panel.add(extra_info_label5)
 extra_info_panel.add(scrollPane_5)
-#extra_info_panel.add(JScrollPane(extra_info_textarea5))
-
-
 extra_info.add(extra_info_panel)
-
 dict_req_headers = {}
 req_headers_description = open('request_headers.txt','r')
 for line in req_headers_description.readlines():
@@ -94,7 +84,6 @@ for line in req_headers_description.readlines():
     header_risk = 'Potential risks information unavailable for header ' + header_name
   dict_req_headers[header_name] = (header_description, header_example, header_url, header_risk)
 req_headers_description.close()
-
 dict_resp_headers = {}
 resp_headers_description = open('response_headers.txt','r')
 for line in resp_headers_description.readlines():
@@ -114,8 +103,9 @@ for line in resp_headers_description.readlines():
     header_risk = 'Potential risks information unavailable for header ' + header_name
   dict_resp_headers[header_name] = (header_description, header_example, header_url, header_risk)
 resp_headers_description.close()
-
 #/////////////////////////////////////////////////////
+
+#initialize()
 
 class IssueTableModel(DefaultTableModel):
     """Extends the DefaultTableModel to make it readonly (among other
@@ -219,22 +209,9 @@ class IssueTableMouseListener_Window(MouseListener):
 class IssueTableMouseListener_Tab(MouseListener):
 
     def getClickedIndex(self, event):
-        """Returns the value of the first column of the table row that was
-        clicked. This is not the same as the row index because the table
-        can be sorted."""
-        # get the event source, the table in this case.
         tbl = event.getSource()
-        # get the clicked row
         row = tbl.getSelectedRow()
-        # get the first value of clicked row
         return tbl.getValueAt(row, 0)
-        # return event.getSource.getValueAt(event.getSource().getSelectedRow(), 0)
-
-    '''def getClickedRow(self, event):
-        """Returns the complete clicked row."""
-        tbl = event.getSource()
-        return tbl
-        #return [tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()), tbl.getSelectedRow()]'''
 
     def mousePressed(self, event):
       pass
@@ -244,19 +221,50 @@ class IssueTableMouseListener_Tab(MouseListener):
 
     # event.getClickCount() returns the number of clicks.
     def mouseClicked(self, event):
+        clicked_value = ''
         if event.getClickCount() == 1:
             
             tbl = event.getSource()
             val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
             
             header = val[0]
+            clicked_host = val[1]
             k = tbl.getSelectedRow()
             if header == '':
               while header == '':
                 k -= 1
                 header = tbl.getModel().getDataVector().elementAt(k)[0]
+        header_value = header.split('<font color="orange">')[1].split('</font>')[0]
+        #hasta aqui ok, header_value es el header que se ha marcado (primera columna), creo que este solo lo uso para subrayado en el textarea
 
-        # aqui header ya es el header bueno de la que se ha seleccionado, aunque no tuviera el header puesto en la fila si hay mas de una fila para el mismo header. ahora usarlo para buscar todos los endpoints uniques y ponerlos en la tabla self.table_endpoints (puede que haga falta quitar el self, por estar definido aqui fuera de la clase el click handler, y la tabla dentro de la otra clase??)
+        print(clicked_host)
+        global host_endpoint #[host, endpoint]
+        global endpoint_table
+        endpoint_table = []
+        print(len(host_endpoint))
+        print(host_endpoint[1:3])
+        for (host, endpoint) in host_endpoint:
+          
+          #print('*'*20)
+          #print(host)
+          #print(clicked_host)
+          #print('*'*20)
+          if clicked_host == host:# and endpoint not in endpoint_table:
+            print(')))' + host)
+            endpoint_table.append([endpoint])
+        
+        #print('==========================================')
+        #for endpoint in endpoint_table:
+        #  print(endpoint)
+        #print('==========================================')
+        
+        global burp_extender_instance #variable global que representa la instancia de IBurpExtender que se crea al cargar la extension. se usa para acceder desde fuera (especialmente desde el mouse event handler para actualizar la endpoint_table) a propiedades y metodos de la instancia "principal" de la extension. el valor se lo doy dentro de la intancia, igualando esta variable a self
+        #print('&'*40)
+        #print(endpoint_table)
+        #print('&'*40)
+        burp_extender_instance.update_endpoints(endpoint_table)
+
+
 
             
 
@@ -282,10 +290,12 @@ class IssueTable_Tab(JTable):
         self.addMouseListener(IssueTableMouseListener_Tab())
 
 
+
 #/////////////////////////////////////////////////////
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
+  test ="joder"
   def registerExtenderCallbacks(self, callbacks):
     self._callbacks = callbacks
     self._helpers = callbacks.helpers
@@ -300,6 +310,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.headers_already_in_table = []
     self.last_len = 0
     self.last_row = 0
+    global history1 # variable global con el history de requests
+    history1 = self._callbacks.getProxyHistory()
+    print('////////////////')
+    global burp_extender_instance
+    burp_extender_instance = self
+    print(self)
+    print('////////////////')
     return
     
 
@@ -377,6 +394,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     print("save json!")
     return
   
+  def update_endpoints(self, endpoint_table):
+    self.model_endpoints.setRowCount(0)
+    for entry in endpoint_table:
+      self.model_endpoints.addRow(entry)
+    return
 
   def getUiComponent(self):
     panel = JPanel(GridBagLayout())
@@ -453,9 +475,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.tab_tabs.addTab('Responses', panelTab_resp)
 
     # ================== Add endpoints table ===================== #
-    self.model_endpoints = IssueTableModel([["asf"],['456']], ["Endpoint"])
+    
+
+
+    #global model_endpoints
+    self.model_endpoints = IssueTableModel([[""]], ["Unique endpoints"])
     self.table_endpoints = JTable(self.model_endpoints)
-    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(JTable(self.model_endpoints)),JTextArea())#JTable(self.model_endpoints), JTextArea()) 
+    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.table_endpoints),JTextArea())#JTable(self.model_endpoints), JTextArea()) 
     splt_2.setDividerLocation(300)
 
     splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
@@ -499,11 +525,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.anchor = GridBagConstraints.WEST
     panel.add( JPanel2 , c)
 
-
-
     return panel
 
+  
+
   def clear_table(self):
+    
     self.model_tab_req.setRowCount(0)
     self.model_tab_resp.setRowCount(0)
     self.for_table = []
@@ -520,8 +547,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.clear_table()
 
-    history = self._callbacks.getProxyHistory()
-    for k, item in enumerate(history):
+    global history1
+    history1 = []
+    history1 = self._callbacks.getProxyHistory()
+    global host_endpoint
+
+    for item in history1: # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
       
@@ -530,7 +561,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         if 'Host: ' in req_head:
           host = req_head.split(': ')[1]
           break
-      
+      if (host, req_headers[0]) not in host_endpoint: #si encuentro el index del history meterlo en la siguiente linea
+        host_endpoint.append((host, req_headers[0]))
       # -------------------- requests -------------------#
       
       for req_head in req_headers[1:]:
@@ -587,7 +619,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.last_row += 1
       self.last_row = 0
       self.for_table = []
-    self.last_len = len(history)
+    self.last_len = len(history1)
     return
 
   def createMenuItems(self, context_menu):
@@ -605,8 +637,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.to_submit_text.setLineWrap(True)
     self.to_submit_text.setText(final_text)
     return
-
-  
 
   def show_window(self, event):
 
@@ -861,4 +891,5 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     frame.setVisible(True)
     frame.toFront()
     frame.setAlwaysOnTop(True)
+
 
