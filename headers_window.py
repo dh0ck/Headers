@@ -1,9 +1,9 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
-import shutil, glob
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants
+import shutil, glob, re
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
-from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component  # quitar los layout que no utilice
+from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
 from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener
@@ -18,7 +18,6 @@ endpoint_table = []
 
 # el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se  ee un nuevo frame por cada doble click
 extra_info = JFrame("Extended header info")
-#extra_info.setLayout(BoxLayout())
 extra_info_panel = JPanel()
 extra_info_panel.setLayout(BoxLayout(extra_info_panel, BoxLayout.Y_AXIS ) )
 extra_info.setSize(400, 350)
@@ -54,16 +53,9 @@ extra_info_textarea5 = JTextArea("There are no potential risks associated with t
 extra_info_textarea5.setLineWrap(True)
 scrollPane_5 = JScrollPane(extra_info_textarea5)
 scrollPane_5.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-extra_info_panel.add(extra_info_label1)
-extra_info_panel.add(scrollPane_1)
-extra_info_panel.add(extra_info_label2)
-extra_info_panel.add(scrollPane_2)
-extra_info_panel.add(extra_info_label3)
-extra_info_panel.add(scrollPane_3)
-extra_info_panel.add(extra_info_label4)
-extra_info_panel.add(scrollPane_4)
-extra_info_panel.add(extra_info_label5)
-extra_info_panel.add(scrollPane_5)
+for element in [extra_info_label1, scrollPane_1, extra_info_label2, scrollPane_2, extra_info_label3, scrollPane_3, extra_info_label4, scrollPane_4, extra_info_label5, scrollPane_5]:
+  extra_info_panel.add(element)
+
 extra_info.add(extra_info_panel)
 dict_req_headers = {}
 req_headers_description = open('request_headers.txt','r')
@@ -114,7 +106,6 @@ class IssueTableModel(DefaultTableModel):
     def __init__(self, data, headings):
         # call the DefaultTableModel constructor to populate the table
         DefaultTableModel.__init__(self, data, headings)
-        print('issute table model instantiated')
 
     def isCellEditable(self, row, column):
         """Returns True if cells are editable."""
@@ -133,45 +124,42 @@ class IssueTableModel(DefaultTableModel):
         return columnClasses[column]'''
 
 
+class IssueTableMouseListener(MouseListener):
 
-class IssueTableMouseListener_Window(MouseListener):
+  def getClickedIndex(self, event):
+    """Returns the value of the first column of the table row that was
+    clicked. This is not the same as the row index because the table
+    can be sorted."""
+    # get the event source, the table in this case.
+    tbl = event.getSource()
+    # get the clicked row
+    row = tbl.getSelectedRow()
+    # get the first value of clicked row
+    return tbl.getValueAt(row, 0)
+    # return event.getSource.getValueAt(event.getSource().getSelectedRow(), 0)
 
-    def getClickedIndex(self, event):
-        """Returns the value of the first column of the table row that was
-        clicked. This is not the same as the row index because the table
-        can be sorted."""
-        # get the event source, the table in this case.
-        tbl = event.getSource()
-        # get the clicked row
-        row = tbl.getSelectedRow()
-        # get the first value of clicked row
-        return tbl.getValueAt(row, 0)
-        # return event.getSource.getValueAt(event.getSource().getSelectedRow(), 0)
+  def getClickedRow(self, event):
+    """Returns the complete clicked row."""
+    tbl = event.getSource()
+    return [tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()), tbl.getSelectedRow()]
 
-    def getClickedRow(self, event):
-        """Returns the complete clicked row."""
-        tbl = event.getSource()
-        #print("XXXXXXXXXXHHH: ")
-        #print(tbl)
-        #print("------------")
-        #print("get clicked row was clicked")
-        #print(tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()))
-        return [tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow()), tbl.getSelectedRow()]
+  def mousePressed(self, event):
+    pass
 
-    def mousePressed(self, event):
-      pass
+  def mouseReleased(self, event):
+    pass
 
-    def mouseReleased(self, event):
-      pass
+  # the following two are necessary, although they are empty, otherwise the extension crashes when the mouse cursor enters or exits the table
+  def mouseEntered(self, event):
+    pass
 
-    # event.getClickCount() returns the number of clicks.
+  def mouseExited(self, event):
+    pass
+
+class IssueTableMouseListener_Window(IssueTableMouseListener):
     def mouseClicked(self, event):
-        if event.getClickCount() == 1:
-            # print "single-click. clicked index:", self.getClickedRow(event)
-
-            # modify the items in the panel
-            #print("single-click: ", self.getClickedRow(event))
-            
+        if event.getClickCount() == 1:  # single click on table elements
+            header = self.getClickedRow(event)[0]
 
             header = header[0].split('<font color="orange">')[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
             extra_info_textarea1.setText(header)
@@ -181,7 +169,6 @@ class IssueTableMouseListener_Window(MouseListener):
               extra_info_textarea4.setText(dict_req_headers[header][2])
               extra_info_textarea5.setText(dict_req_headers[header][3])
             if header not in (list(dict_req_headers.keys())) and header not in list(dict_resp_headers.keys()):
-              print(header + 'xxxx')
               extra_info_textarea2.setText('Description unavailable for header: ' + header)
               extra_info_textarea3.setText('Example unavailable for header: ' + header)
               extra_info_textarea4.setText('URL unavailable for header: ' + header)
@@ -191,33 +178,10 @@ class IssueTableMouseListener_Window(MouseListener):
               extra_info_textarea3.setText(dict_resp_headers[header][1])
               extra_info_textarea4.setText(dict_resp_headers[header][2])
               extra_info_textarea5.setText(dict_resp_headers[header][3])
-        if event.getClickCount() == 2:
-            # open the dialog to edit
-            #print("double-click: ", self.getClickedRow(event))
-            #self.show_info_window()
+        if event.getClickCount() == 2:  # double click to make extra info panel visible
             extra_info.setVisible(True)
 
-
-    # the following two are necessary, although they are empty, otherwise the extension crashes when the mouse cursor enters or exits the table
-    def mouseEntered(self, event):
-        pass
-
-    def mouseExited(self, event):
-        pass
-
-
-class IssueTableMouseListener_Tab(MouseListener):
-
-    def getClickedIndex(self, event):
-        tbl = event.getSource()
-        row = tbl.getSelectedRow()
-        return tbl.getValueAt(row, 0)
-
-    def mousePressed(self, event):
-      pass
-
-    def mouseReleased(self, event):
-      pass
+class IssueTableMouseListener_Tab(IssueTableMouseListener):
 
     # event.getClickCount() returns the number of clicks.
     def mouseClicked(self, event):
@@ -237,65 +201,106 @@ class IssueTableMouseListener_Tab(MouseListener):
         header_value = header.split('<font color="orange">')[1].split('</font>')[0]
         #hasta aqui ok, header_value es el header que se ha marcado (primera columna), creo que este solo lo uso para subrayado en el textarea
 
-        print(clicked_host)
         global host_endpoint #[host, endpoint]
         global endpoint_table
         endpoint_table = []
-        print(len(host_endpoint))
-        print(host_endpoint[1:3])
         for (host, endpoint) in host_endpoint:
           
-          #print('*'*20)
-          #print(host)
-          #print(clicked_host)
-          #print('*'*20)
           if clicked_host == host:# and endpoint not in endpoint_table:
-            print(')))' + host)
             endpoint_table.append([endpoint])
         
-        #print('==========================================')
-        #for endpoint in endpoint_table:
-        #  print(endpoint)
-        #print('==========================================')
-        
         global burp_extender_instance #variable global que representa la instancia de IBurpExtender que se crea al cargar la extension. se usa para acceder desde fuera (especialmente desde el mouse event handler para actualizar la endpoint_table) a propiedades y metodos de la instancia "principal" de la extension. el valor se lo doy dentro de la intancia, igualando esta variable a self
-        #print('&'*40)
-        #print(endpoint_table)
-        #print('&'*40)
         burp_extender_instance.update_endpoints(endpoint_table)
+        burp_extender_instance.selected_host = clicked_host
+        burp_extender_instance.selected_header = header
 
 
 
-            
+class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
+    def mouseClicked(self, event):
+        if event.getClickCount() == 1:
+            print("endpoints clicked")
+        global burp_extender_instance 
+        #burp_extender_instance.header_summary.setText("holajjje")
+        clicked_value = ''
+        if event.getClickCount() == 1:
+            tbl = event.getSource()
+            val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
-    # the following two are necessary, although they are empty, otherwise the extension crashes when the mouse cursor enters or exits the table
-    def mouseEntered(self, event):
-        pass
+        global history1
+        query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+        buffer = "" 
 
-    def mouseExited(self, event):
-        pass
+        print(len(history1))
+        for item in history1:
+          request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+          req_headers = request.split('\r\n')
+          endpoint = req_headers[0]
+          
+          matches = query_params.findall(endpoint)
+          for match in matches:
+            endpoint = endpoint.replace(match, match[0] + '***' + match[-1])
 
+          if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
+            for req_head in req_headers[1:]: # este for encuentra el Host header
+              if 'Host: ' in req_head:
+                host = req_head.split(': ')[1]
+                break
 
-class IssueTable_Window(JTable):
-    def __init__(self, model):
+            clicked_header = burp_extender_instance.selected_header.split('<font color="orange">')[1].split('</font>')[0]
+            if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
+              burp_extender_instance.header_summary.setText("")
+              buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
+              buffer += '<b>' + req_headers[0] + '</b>'
+              buffer += '<ul padding-left=0>'
+              for req_head in req_headers[1:]: # este for encuentra el Host header
+                if req_head.split(": ")[0] == clicked_header:
+                  buffer += '<li><b><font color="orange">' + req_head + "</font></b><br></li>"
+                else:
+                  req_head_name = req_head.split(': ')[0]
+                  req_head_value = req_head.split(': ')[1]
+
+                  buffer += '<li><b>' + req_head_name + ":</b> " + req_head_value + "<br></li>"
+
+              buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
+              buffer += '<h2><font color="orange">Response headers:</h2>' 
+              buffer += '<ul padding-left=0>'
+
+              response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+              resp_headers = response.split('\r\n')
+              for resp_head in resp_headers[1:]:
+                if resp_head.split(":")[0] == clicked_header:
+                  buffer += '<li><b><font color="orange">' + resp_head + "</font></b><br>"
+                else:
+                  resp_head_name = resp_head.split(': ')[0]
+                  resp_head_value = resp_head.split(': ')[1]
+                  buffer += "<li><b>" + resp_head_name + ":</b> " + resp_head_value + "<br></li>"
+              buffer += "</ul>"
+              burp_extender_instance.header_summary.setText(buffer + "</html>")
+              
+              break
+
+class IssueTable(JTable):
+
+    def __init__(self, model, table_type):
         self.setModel(model)
         self.getTableHeader().setReorderingAllowed(False)
-        self.addMouseListener(IssueTableMouseListener_Window())
-
-class IssueTable_Tab(JTable):
-    def __init__(self, model):
-        self.setModel(model)
-        self.getTableHeader().setReorderingAllowed(False)
-        self.addMouseListener(IssueTableMouseListener_Tab())
-
-
+        if table_type == "tab":
+          self.addMouseListener(IssueTableMouseListener_Tab())
+        elif table_type == "window":
+          self.addMouseListener(IssueTableMouseListener_Window())
+        elif table_type == "endpoints":
+          self.addMouseListener(IssueTableMouseListener_Endpoints())
 
 #/////////////////////////////////////////////////////
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
-  test ="joder"
+  def __init__(self):
+    selected_host = ""
+    selected_header = ""
+
   def registerExtenderCallbacks(self, callbacks):
     self._callbacks = callbacks
     self._helpers = callbacks.helpers
@@ -312,11 +317,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.last_row = 0
     global history1 # variable global con el history de requests
     history1 = self._callbacks.getProxyHistory()
-    print('////////////////')
     global burp_extender_instance
     burp_extender_instance = self
-    print(self)
-    print('////////////////')
     return
     
 
@@ -395,9 +397,28 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
   
   def update_endpoints(self, endpoint_table):
-    self.model_endpoints.setRowCount(0)
+    self.model_unique_endpoints.setRowCount(0)
+    self.model_all_endpoints.setRowCount(0)
+    self.unique_entries = []
+
     for entry in endpoint_table:
-      self.model_endpoints.addRow(entry)
+      self.model_all_endpoints.addRow(entry)
+
+    # aqui las regex para endpoints
+    query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+    for entry in endpoint_table:
+      matches = query_params.findall(entry[0])
+      
+      k=0
+      for match in matches:
+        k +=1
+        entry[0] = entry[0].replace(match, match[0] + '***' + match[-1])
+        
+      if entry not in self.unique_entries:
+        self.unique_entries.append(entry)
+        self.model_unique_endpoints.addRow(entry)
+
+    ''' METER OTRA REGEX PARA CUANDO HAY NUMEROS EN LA URL, TIPO /test/1234873598435/asdf'''
     return
 
   def getUiComponent(self):
@@ -407,17 +428,18 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     JPanel1 = JPanel(GridBagLayout())
 
     c = GridBagConstraints()
-    c.gridx = 0 # third column
-    y_pos =0#+= 1
+    c.gridx = 0 
+    y_pos = 0
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
-    self.filter_but = JButton("Update table", actionPerformed = self.filter_entries)
+    self.filter_but = JButton('<html><b><font color="white">Update table</font></b></html>', actionPerformed = self.filter_entries)
+    self.filter_but.setBackground(Color(210,101,47))
     JPanel1.add( self.filter_but, c )
 
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
-    c.gridx = 1 # third column
+    c.gridx = 1 
     c.gridy = y_pos
     self.filter = JTextField('Filter...')
     JPanel1.add(self.filter , c )
@@ -450,19 +472,19 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.BOTH
 
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
-    self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in...</b></html>')
+    self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in Host:</b></html>')
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
-    self.table_tab_req = IssueTable_Tab(self.model_tab_req)
+    self.table_tab_req = IssueTable(self.model_tab_req, "tab")
 
     self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(100)
-    self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(250)
+    self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(100)
 
     self.model_tab_resp = IssueTableModel([["",""]], self.colNames)
-    self.table_tab_resp = IssueTable_Tab(self.model_tab_resp)
+    self.table_tab_resp = IssueTable(self.model_tab_resp, "tab")
 
     self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(100)
-    self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(250)
+    self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(100)
 
     # IMPORTANT: tables must be inside a JScrollPane so that the Table headers (that is, the columns names) are visible!!!
     panelTab_req = JPanel(BorderLayout()) 
@@ -475,33 +497,30 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.tab_tabs.addTab('Responses', panelTab_resp)
 
     # ================== Add endpoints table ===================== #
+
+    self.model_unique_endpoints = IssueTableModel([[""]], ["Unique endpoints for selected host"])
+    self.table_unique_endpoints = IssueTable(self.model_unique_endpoints, "endpoints")
+
+    self.model_all_endpoints = IssueTableModel([[""]], ["All endpoints for selected host"])
+    self.table_all_endpoints = IssueTable(self.model_all_endpoints, "endpoints")
+
     
+    self.endpoint_tabs = JTabbedPane()
+    self.endpoint_tabs.addTab('Unique endpoints', JScrollPane(self.table_unique_endpoints))
+    self.endpoint_tabs.addTab('All endpoints', JScrollPane(self.table_all_endpoints))
+    
+    self.header_summary = JEditorPane("text/html", "")
 
-
-    #global model_endpoints
-    self.model_endpoints = IssueTableModel([[""]], ["Unique endpoints"])
-    self.table_endpoints = JTable(self.model_endpoints)
-    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.table_endpoints),JTextArea())#JTable(self.model_endpoints), JTextArea()) 
+    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, JScrollPane(self.header_summary))
     splt_2.setDividerLocation(300)
 
     splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
-    splt_1.setDividerLocation(600)
+    splt_1.setDividerLocation(500)
     panel.add(splt_1, c)
-
-    # ================== Add text area ===================== #
-    c = GridBagConstraints()
-    y_pos += 1
-    c.gridy = y_pos 
-    c.anchor = GridBagConstraints.EAST
-    c.weighty = 1
-    c.fill = GridBagConstraints.HORIZONTAL
-    text_area1 = JTextArea("",rows=5, editable=True)
-    panel.add( text_area1 , c)
 
     # ================== Add saving to file ===================== #
     JPanel2 = JPanel(GridBagLayout())
 
-    
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 0
@@ -715,15 +734,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
 
 
-    
-
-
-
     c=[x[0:2] for x in self.tableDataReq]      
     self.model_window_req = IssueTableModel(c, self.colNames)
-    self.tableReq = IssueTable_Window(self.model_window_req)
-    #dataModelReq = DefaultTableModel(c, colNames)
-    #self.tableReq = JTable(dataModelReq)
+    self.tableReq = IssueTable(self.model_window_req, "window")
     self.tableReq.getColumnModel().getColumn(0).setPreferredWidth(200)
     self.tableReq.getColumnModel().getColumn(1).setPreferredWidth(800)
 
@@ -741,9 +754,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     d=[x[0:2] for x in self.tableDataResp]      
     self.model_window_resp = IssueTableModel(d, self.colNames)
-    self.tableResp = IssueTable(self.model_window_resp)
-    #dataModelResp = DefaultTableModel(d, colNames)
-    #self.tableResp = JTable(dataModelResp)
+    self.tableResp = IssueTable(self.model_window_resp, "window")
     self.tableResp.getColumnModel().getColumn(0).setPreferredWidth(200)
     self.tableResp.getColumnModel().getColumn(1).setPreferredWidth(800)
     
@@ -805,19 +816,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     panelTab3.add(text1 ,c)
 
     # ========================== add text fields ============================== #
-    fields_names = [
-              '   Header Name:  ', 
-              '   Header Description:  ', 
-              '   Example:  ', 
-              '   URL explaining header:  ', 
-              '   Potential header risks:  '
-              ]
+    fields_names = ['   Header Name:  ', '   Header Description:  ', '   Example:  ', '   URL explaining header:  ', '   Potential header risks:  ']
 
-    self.new_header_name = JTextField('')
-    self.new_header_description = JTextField( '' )
-    self.new_header_example = JTextField( '' )
-    self.new_header_url = JTextField('')
-    self.new_header_risks = JTextField('')
+    self.new_header_name = self.new_header_description = self.new_header_example = self.new_header_url = self.new_header_risks = JTextField('')
 
     fields = [ self.new_header_name, self.new_header_description, self.new_header_example, self.new_header_url, self.new_header_risks ]
 
@@ -827,7 +828,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       y_pos += 1
       c.gridy = y_pos 
       c.anchor = GridBagConstraints.EAST
-      panelTab3.add( JLabel(fields_names[k]), c )
+      panelTab3.add(JLabel(fields_names[k]), c)
 
       c = GridBagConstraints()
       c.fill = GridBagConstraints.HORIZONTAL
@@ -835,7 +836,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       c.gridx = 1 
       c.gridy = y_pos 
       
-      panelTab3.add(fields[k] , c )
+      panelTab3.add(fields[k] , c)
 
     # ======================= add button ================================= #
 
@@ -878,8 +879,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       panelTab4.add(JLabel(label))
 
     panelTab4.add(JButton("Update headers info", actionPerformed=self.UpdateHeaders))
-
-    
 
     tabs = JTabbedPane() 
     tabs.addTab('Requests', panelTab1)
