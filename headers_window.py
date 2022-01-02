@@ -9,7 +9,6 @@ from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener
 
 
-#def initialize():
 burp_extender_instance = "" # variable global que sera el instance de bupr extender, para acceder a los valores de la instancia de IBurpExtender que burp crea, pero desde fuera, sobre todo para cambiar con clicks la tabla de endpoints
 history1 = []
 host_endpoint = [] #se rellena al darle a filter en la tab, pero habra que arreglar que no haya duplicados cuando cambian los valores de los query string  rameters (o puedo dejar que se repitan y ponerlos todos.) lo bueno seria poner tambien el index del history y en el text area poner los headers de la req  los de la resp, separados por una =========, etc
@@ -24,35 +23,42 @@ extra_info.setSize(400, 350)
 extra_info.setLocation(840, 0)
 extra_info.toFront()
 extra_info.setAlwaysOnTop(True)
+
 extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
 extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
+extra_info_textarea1.setLineWrap(True)
 scrollPane_1 = JScrollPane(extra_info_textarea1)
 scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
 extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
 extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
 extra_info_textarea2.setLineWrap(True)
 scrollPane_2 = JScrollPane(extra_info_textarea2)
 scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
 extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
 extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
 extra_info_textarea3.setLineWrap(True)
 scrollPane_3 = JScrollPane(extra_info_textarea3)
 scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
 extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
 extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
 extra_info_textarea4.setLineWrap(True)
 scrollPane_4 = JScrollPane(extra_info_textarea4)
 scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
 extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
 extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
 extra_info_textarea5.setLineWrap(True)
 scrollPane_5 = JScrollPane(extra_info_textarea5)
 scrollPane_5.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
 for element in [extra_info_label1, scrollPane_1, extra_info_label2, scrollPane_2, extra_info_label3, scrollPane_3, extra_info_label4, scrollPane_4, extra_info_label5, scrollPane_5]:
   extra_info_panel.add(element)
 
@@ -62,42 +68,49 @@ req_headers_description = open('request_headers.txt','r')
 for line in req_headers_description.readlines():
   line_split = line.split('&&')
   header_name = line_split[0]
+
   header_description = line_split[1]
   if header_description.rstrip() == '':
     header_description = 'Description unavailable for header: ' + header_name
+
   header_example = line_split[2]
   if header_example.rstrip() == '':
     header_example = 'Example unavailable for header: ' + header_name
+
   header_url = line_split[3]
   if header_url.rstrip() == '':
     header_url = 'URL unavailable for header ' + header_name
+
   header_risk = line_split[4]
   if header_risk.rstrip() == '':
     header_risk = 'Potential risks information unavailable for header ' + header_name
   dict_req_headers[header_name] = (header_description, header_example, header_url, header_risk)
 req_headers_description.close()
+
 dict_resp_headers = {}
 resp_headers_description = open('response_headers.txt','r')
 for line in resp_headers_description.readlines():
   line_split = line.split('&&')
   header_name = line_split[0]
+
   header_description = line_split[1]
   if header_description.rstrip() == '':
     header_description = 'Description unavailable for header: ' + header_name
+
   header_example = line_split[2]
   if header_example.rstrip() == '':
     header_example = 'Example unavailable for header: ' + header_name
+
   header_url = line_split[3]
   if header_url.rstrip() == '':
     header_url = 'URL unavailable for header ' + header_name
+
   header_risk = line_split[4]
   if header_risk.rstrip() == '':
     header_risk = 'Potential risks information unavailable for header ' + header_name
   dict_resp_headers[header_name] = (header_description, header_example, header_url, header_risk)
 resp_headers_description.close()
-#/////////////////////////////////////////////////////
 
-#initialize()
 
 class IssueTableModel(DefaultTableModel):
     """Extends the DefaultTableModel to make it readonly (among other
@@ -109,19 +122,8 @@ class IssueTableModel(DefaultTableModel):
 
     def isCellEditable(self, row, column):
         """Returns True if cells are editable."""
-        # make all rows and columns uneditable.
-        # do we need to check the column value here?
-        canEdit = [False, False]#, False, False, False]
+        canEdit = [False, False]
         return canEdit[column]
-        # return False
-
-    '''def getColumnClass(self, column):
-        """Returns the column data class. Optional in this case."""
-        from java.lang import Integer, String, Object
-        # return Object if you don't know the type.
-        # only works if we are not changing the number of columns
-        columnClasses = [String, String]#[Integer, String, String, String, String]
-        return columnClasses[column]'''
 
 
 class IssueTableMouseListener(MouseListener):
@@ -219,34 +221,62 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
 class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
     def mouseClicked(self, event):
-        if event.getClickCount() == 1:
-            print("endpoints clicked")
+            
         global burp_extender_instance 
-        #burp_extender_instance.header_summary.setText("holajjje")
         clicked_value = ''
         if event.getClickCount() == 1:
             tbl = event.getSource()
             val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
         global history1
-        query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
         buffer = "" 
 
-        print(len(history1))
+        k = 0 # para las que no salen siempre, uso esto mas adelante para saber si es la primera que se encontro en el history, o las siguientes
+        # en estos dos guardo los que se han ido encontrando hasta ahora, para poder comprobar si los nuevos no estaban en la primera del history que coincidia:
+        req_head_list = []
+        resp_head_list = []
+        
+        # matchea query string parameters:
+        query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+        # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
+        number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
+
+        print('--------------------------')
+        print(history1[1].__repr__())
+        print('--------------------------')
         for item in history1:
           request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
           req_headers = request.split('\r\n')
           endpoint = req_headers[0]
           
-          matches = query_params.findall(endpoint)
-          for match in matches:
-            endpoint = endpoint.replace(match, match[0] + '***' + match[-1])
+
+
+          # lo siguiente aplica las regex tambien a los elementos del history con los que se compara si el click se ha originado desde la tabla de unique, porque a los elementos que clickamos de ahi ya se les aplico la regex y hace falta para hacer bien la comparacion. a los de all no hay que hacerles esto porque no se les aplica nunca las regex
+          if tbl == burp_extender_instance.table_unique_endpoints:
+          
+            matches = query_params.findall(endpoint.split('HTTP/')[0])
+            for match in matches:
+              try:
+                endpoint = endpoint.replace(match[1:], '<*>' + match[-1])
+              except:
+                print('Error matching first regex when computing unique endpoints.')
+
+            matches1 = number_between_forwardslash.findall(endpoint.split('HTTP/')[0])
+            for match1 in matches1:
+              try:
+                endpoint = endpoint.replace(match1[1:],  '<*>' )
+              except:
+                print('Error matching second regex when computing unique endpoints.')
+
+
 
           if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
+            
             for req_head in req_headers[1:]: # este for encuentra el Host header
               if 'Host: ' in req_head:
                 host = req_head.split(': ')[1]
                 break
+            print('--------- ' + host) 
 
             clicked_header = burp_extender_instance.selected_header.split('<font color="orange">')[1].split('</font>')[0]
             if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
@@ -255,13 +285,27 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
               buffer += '<b>' + req_headers[0] + '</b>'
               buffer += '<ul padding-left=0>'
               for req_head in req_headers[1:]: # este for encuentra el Host header
-                if req_head.split(": ")[0] == clicked_header:
-                  buffer += '<li><b><font color="orange">' + req_head + "</font></b><br></li>"
-                else:
-                  req_head_name = req_head.split(': ')[0]
-                  req_head_value = req_head.split(': ')[1]
+                  print(req_head) 
+                  #if k == 0:
+                  req_head = req_head.replace('<','< ')
+                  if req_head.split(": ")[0] != "Host" and req_head.split(": ")[0] == clicked_header:
+                    buffer += '<li><b><font color="orange">' + req_head + "</font></b><br></li>"
 
-                  buffer += '<li><b>' + req_head_name + ":</b> " + req_head_value + "<br></li>"
+                  elif req_head.split(": ")[0] == "Host":# and req_head.split(": ")[0] == clicked_header:
+                    buffer += '<li><b><font color="white">' + req_head + "</font></b><br></li>"
+                  else:
+                    req_head_name = req_head.split(': ')[0]
+                    req_head_value = req_head.split(': ')[1]
+                    
+                    buffer += '<li><b>' + req_head_name + ":</b> " + req_head_value + "<br></li>"
+                  #req_head_list.append(req_head)
+
+                  '''if k > 0 and req_head not in req_head_list:
+                  buffer += '<li><b><font color="pink">' + req_head_name + ":</font></b> " + req_head_value + "<br></li>"
+                  req_head_list.append(req_head)'''
+
+                
+              #print(req_head_list)
 
               buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
               buffer += '<h2><font color="orange">Response headers:</h2>' 
@@ -270,16 +314,21 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
               response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
               resp_headers = response.split('\r\n')
               for resp_head in resp_headers[1:]:
+                resp_head = resp_head.replace('<','< ') #este es porque algunos headers tenian links en html y se renderizaba en cosas raras
                 if resp_head.split(":")[0] == clicked_header:
                   buffer += '<li><b><font color="orange">' + resp_head + "</font></b><br>"
                 else:
                   resp_head_name = resp_head.split(': ')[0]
                   resp_head_value = resp_head.split(': ')[1]
                   buffer += "<li><b>" + resp_head_name + ":</b> " + resp_head_value + "<br></li>"
+                #resp_head_list.append(resp_head)
               buffer += "</ul>"
+              print('hey')
               burp_extender_instance.header_summary.setText(buffer + "</html>")
-              
+
+              #k += 1
               break
+              ''' lo que queria hacer aqui es que como a veces en un mismo endpoint no se mandan todas las headers, queria iterar por todas las requests de un cierto endpoint y anadir en otro color los headers que no aparecen en la primera, para indicar que no siempre salen. en la prueba inical que hice iba mal, muy lento y se petaba, pero creo que algo hice mal. creo que ayudaria en general en las tablas estas poner en otra columna el index de la request, y ese index podria usarse para localizar mas facilmente las entradas en el history, y me evitaria loops de comparacioines, y tener que aplicar en esta funcion las regex otra vez. intentar hacer esto, creo que todo ira mas fluido'''
 
 class IssueTable(JTable):
 
@@ -293,7 +342,6 @@ class IssueTable(JTable):
         elif table_type == "endpoints":
           self.addMouseListener(IssueTableMouseListener_Endpoints())
 
-#/////////////////////////////////////////////////////
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
@@ -304,7 +352,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def registerExtenderCallbacks(self, callbacks):
     self._callbacks = callbacks
     self._helpers = callbacks.helpers
-    callbacks.setExtensionName("Headers info")
+    callbacks.setExtensionName("Headers")
     callbacks.registerContextMenuFactory(self)
     callbacks.addSuiteTab(self)
     self.req_header_dict = {}
@@ -404,21 +452,31 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for entry in endpoint_table:
       self.model_all_endpoints.addRow(entry)
 
-    # aqui las regex para endpoints
+    # matchea query string parameters:
     query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+    # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
+    number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
     for entry in endpoint_table:
-      matches = query_params.findall(entry[0])
-      
-      k=0
+
+      matches = query_params.findall(entry[0].split('HTTP/')[0])
       for match in matches:
-        k +=1
-        entry[0] = entry[0].replace(match, match[0] + '***' + match[-1])
+        try:
+          entry[0] = entry[0].replace(match[1:], '<*>' + match[-1])
+        except:
+          print('Error matching first regex when computing unique endpoints.')
+
+      matches1 = number_between_forwardslash.findall(entry[0].split('HTTP/')[0])
+      for match1 in matches1:
+        try:
+          entry[0] = entry[0].replace(match1[1:],  '<*>' )
+        except:
+          print('Error matching second regex when computing unique endpoints.')
         
       if entry not in self.unique_entries:
         self.unique_entries.append(entry)
         self.model_unique_endpoints.addRow(entry)
 
-    ''' METER OTRA REGEX PARA CUANDO HAY NUMEROS EN LA URL, TIPO /test/1234873598435/asdf'''
+    ''' pasa que algunos endpoints no tienen todas las headers siempre, asi que a veces al marcar alguna no sale el header en naranja. poner como otra seccion al final con headers que estan en ese tipo de enpoint pero no justo en la que se ha marcado en ese momento, y explicar eso con un asterisco'''
     return
 
   def getUiComponent(self):
@@ -526,8 +584,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.weightx = 0
     c.gridx = 1 # third column
     c.gridy = y_pos
-    self.filter = JTextField('Save headers to... (full path)')
-    JPanel2.add(self.filter , c )
+    self.save_path = JTextField('Save headers to... (full path)')
+    JPanel2.add(self.save_path , c )
     
     c = GridBagConstraints()
     c.gridx = 0 # third column
@@ -545,8 +603,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     panel.add( JPanel2 , c)
 
     return panel
-
-  
 
   def clear_table(self):
     
@@ -580,6 +636,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         if 'Host: ' in req_head:
           host = req_head.split(': ')[1]
           break
+      
       if (host, req_headers[0]) not in host_endpoint: #si encuentro el index del history meterlo en la siguiente linea
         host_endpoint.append((host, req_headers[0]))
       # -------------------- requests -------------------#
@@ -616,22 +673,29 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.header_dict = self.req_header_dict
         self.dataModel_tab = self.model_tab_req
       else:
-        self._for_table = self.for_resp_table
+        self.for_table = self.for_resp_table
         self.header_dict = self.resp_header_dict
         self.dataModel_tab = self.model_tab_resp
 
       for key in keys:
-        for k1, host in enumerate(self.header_dict[key]):
-          if [key, host] not in self.for_table:
-            if k1 == 0 and key not in self.headers_already_in_table:
-              self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
-              if key not in self.headers_already_in_table:
-                self.headers_already_in_table.append(key)
-            else:
-              self.for_table.append(["", host])
-              if key not in self.headers_already_in_table:
-                self.headers_already_in_table.append(key)
-        self.for_table.append(['<html><b><font color="orange">' + '-'*300 + '</font></b></html>', '<html><b><font color="orange">' + '-'*300 + '</font></b></html>'*300])
+        k1 = 0
+        for host in self.header_dict[key]:
+          # Apply the filter:
+          if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Filter...":
+            if [key, host] not in self.for_table:
+              if k1 == 0 and key not in self.headers_already_in_table:
+                self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
+                if key not in self.headers_already_in_table:
+                  self.headers_already_in_table.append(key)
+                k1 = 1
+              else:
+                self.for_table.append(["", host])
+                if key not in self.headers_already_in_table:
+                  self.headers_already_in_table.append(key)
+
+        # Apply the filter to add dash line or not after group of entries for a single header
+        if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Filter...":
+          self.for_table.append(['<html><b><font color="orange">' + '-'*300 + '</font></b></html>', '<html><b><font color="orange">' + '-'*300 + '</font></b></html>'*300])
     
       for table_entry in self.for_table[self.last_len:]:
         self.dataModel_tab.insertRow(self.last_row, table_entry)
@@ -728,7 +792,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     tab1 = JPanel()
     tab2 = JPanel()
 
-    frame = JFrame("Headers info")
+    frame = JFrame("Headers")
     frame.setSize(850, 350)
     colNames = ('Header name','Header description')
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
