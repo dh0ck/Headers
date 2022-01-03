@@ -13,6 +13,26 @@ burp_extender_instance = "" # variable global que sera el instance de bupr exten
 history1 = []
 host_endpoint = [] #se rellena al darle a filter en la tab, pero habra que arreglar que no haya duplicados cuando cambian los valores de los query string  rameters (o puedo dejar que se repitan y ponerlos todos.) lo bueno seria poner tambien el index del history y en el text area poner los headers de la req  los de la resp, separados por una =========, etc
 endpoint_table = []
+selected_header_name = ""
+
+f = open('dangerous_headers.txt')
+dangerous_headers = []
+for line in f.readlines():
+  dangerous_headers.append(line.strip('\n'))
+f.close()
+
+f = open('security_headers.txt')
+security_headers = []
+for line in f.readlines():
+  security_headers.append(line.strip('\n'))
+f.close()
+
+f = open('potentially_dangerous_headers.txt')
+potentially_dangerous_headers = []
+for line in f.readlines():
+  potentially_dangerous_headers.append(line.strip('\n'))
+f.close()
+
 
 
 # el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se  ee un nuevo frame por cada doble click
@@ -158,6 +178,7 @@ class IssueTableMouseListener(MouseListener):
   def mouseExited(self, event):
     pass
 
+
 class IssueTableMouseListener_Window(IssueTableMouseListener):
     def mouseClicked(self, event):
         if event.getClickCount() == 1:  # single click on table elements
@@ -183,11 +204,10 @@ class IssueTableMouseListener_Window(IssueTableMouseListener):
         if event.getClickCount() == 2:  # double click to make extra info panel visible
             extra_info.setVisible(True)
 
+
 class IssueTableMouseListener_Tab(IssueTableMouseListener):
 
-    # event.getClickCount() returns the number of clicks.
     def mouseClicked(self, event):
-        clicked_value = ''
         if event.getClickCount() == 1:
             
             tbl = event.getSource()
@@ -203,7 +223,7 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
         header_value = header.split('<font color="orange">')[1].split('</font>')[0]
         #hasta aqui ok, header_value es el header que se ha marcado (primera columna), creo que este solo lo uso para subrayado en el textarea
 
-        global host_endpoint #[host, endpoint]
+        global host_endpoint
         global endpoint_table
         endpoint_table = []
         for (host, endpoint) in host_endpoint:
@@ -211,45 +231,58 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
           if clicked_host == host:# and endpoint not in endpoint_table:
             endpoint_table.append([endpoint])
         
-        global burp_extender_instance #variable global que representa la instancia de IBurpExtender que se crea al cargar la extension. se usa para acceder desde fuera (especialmente desde el mouse event handler para actualizar la endpoint_table) a propiedades y metodos de la instancia "principal" de la extension. el valor se lo doy dentro de la intancia, igualando esta variable a self
-        burp_extender_instance.update_endpoints(endpoint_table)
+        ###global burp_extender_instance #variable global que representa la instancia de IBurpExtender que se crea al cargar la extension. se usa para acceder desde fuera (especialmente desde el mouse event handler para actualizar la endpoint_table) a propiedades y metodos de la instancia "principal" de la extension. el valor se lo doy dentro de la intancia, igualando esta variable a self
+        global selected_header_name
+        selected_header_name = header_value
+        print('yyyyyyyy')
+        print(header_value)
+        print('yyyyyyyy')
+        
         burp_extender_instance.selected_host = clicked_host
-        burp_extender_instance.selected_header = header
+        burp_extender_instance.selected_header = header_value#header # este lo settea ok para la de endpoints
+        burp_extender_instance.update_endpoints(endpoint_table)
+        
+
 
 
 
 class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
+    def extra_symbol(self, head):
+
+      if head.split(": ")[0].lower() in security_headers:
+        extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
+      elif head.split(": ")[0].lower() in dangerous_headers:
+        extra_symbol = '<b><font color="#FF0000"> [ X ] </font><b>'
+      elif head.split(": ")[0].lower() in potentially_dangerous_headers:
+        extra_symbol = '<b><font color="#4FC3F7"> [ ? ] </font><b>'
+      else:
+        extra_symbol = ""
+      return extra_symbol
+
+
     def mouseClicked(self, event):
             
-        global burp_extender_instance 
-        clicked_value = ''
+        ###global burp_extender_instance 
         if event.getClickCount() == 1:
             tbl = event.getSource()
-            val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+            #val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
-        global history1
-        buffer = "" 
-
-        k = 0 # para las que no salen siempre, uso esto mas adelante para saber si es la primera que se encontro en el history, o las siguientes
-        # en estos dos guardo los que se han ido encontrando hasta ahora, para poder comprobar si los nuevos no estaban en la primera del history que coincidia:
-        req_head_list = []
-        resp_head_list = []
+        #global history1
         
-        # matchea query string parameters:
+        burp_extender_instance.clicked_endpoint(tbl, True)
+
+        
+        '''# matchea query string parameters:
         query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
         # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
         number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
 
-        print('--------------------------')
-        print(history1[1].__repr__())
-        print('--------------------------')
         for item in history1:
           request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
           req_headers = request.split('\r\n')
           endpoint = req_headers[0]
-          
-
+          buffer = ""
 
           # lo siguiente aplica las regex tambien a los elementos del history con los que se compara si el click se ha originado desde la tabla de unique, porque a los elementos que clickamos de ahi ya se les aplico la regex y hace falta para hacer bien la comparacion. a los de all no hay que hacerles esto porque no se les aplica nunca las regex
           if tbl == burp_extender_instance.table_unique_endpoints:
@@ -268,15 +301,12 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
               except:
                 print('Error matching second regex when computing unique endpoints.')
 
-
-
           if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
             
             for req_head in req_headers[1:]: # este for encuentra el Host header
               if 'Host: ' in req_head:
                 host = req_head.split(': ')[1]
                 break
-            print('--------- ' + host) 
 
             clicked_header = burp_extender_instance.selected_header.split('<font color="orange">')[1].split('</font>')[0]
             if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
@@ -285,27 +315,20 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
               buffer += '<b>' + req_headers[0] + '</b>'
               buffer += '<ul padding-left=0>'
               for req_head in req_headers[1:]: # este for encuentra el Host header
-                  print(req_head) 
-                  #if k == 0:
+
+                  extra_symbol = self.extra_symbol(req_head)
+
                   req_head = req_head.replace('<','< ')
+                  req_head_name = req_head.split(': ')[0]
+                  req_head_value = req_head.split(': ')[1]
+
                   if req_head.split(": ")[0] != "Host" and req_head.split(": ")[0] == clicked_header:
-                    buffer += '<li><b><font color="orange">' + req_head + "</font></b><br></li>"
+                    buffer += '<li><b>' + '<font color="orange">' + req_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + req_head_value + "</b><br></li>"
 
                   elif req_head.split(": ")[0] == "Host":# and req_head.split(": ")[0] == clicked_header:
-                    buffer += '<li><b><font color="white">' + req_head + "</font></b><br></li>"
+                    buffer += '<li><b>' + extra_symbol + '<font color="white">' + req_head + "</font></b><br></li>"
                   else:
-                    req_head_name = req_head.split(': ')[0]
-                    req_head_value = req_head.split(': ')[1]
-                    
-                    buffer += '<li><b>' + req_head_name + ":</b> " + req_head_value + "<br></li>"
-                  #req_head_list.append(req_head)
-
-                  '''if k > 0 and req_head not in req_head_list:
-                  buffer += '<li><b><font color="pink">' + req_head_name + ":</font></b> " + req_head_value + "<br></li>"
-                  req_head_list.append(req_head)'''
-
-                
-              #print(req_head_list)
+                    buffer += '<li><b>' + req_head_name + extra_symbol + ":</b> " + req_head_value + "<br></li>"
 
               buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
               buffer += '<h2><font color="orange">Response headers:</h2>' 
@@ -314,21 +337,29 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
               response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
               resp_headers = response.split('\r\n')
               for resp_head in resp_headers[1:]:
-                resp_head = resp_head.replace('<','< ') #este es porque algunos headers tenian links en html y se renderizaba en cosas raras
-                if resp_head.split(":")[0] == clicked_header:
-                  buffer += '<li><b><font color="orange">' + resp_head + "</font></b><br>"
-                else:
-                  resp_head_name = resp_head.split(': ')[0]
-                  resp_head_value = resp_head.split(': ')[1]
-                  buffer += "<li><b>" + resp_head_name + ":</b> " + resp_head_value + "<br></li>"
-                #resp_head_list.append(resp_head)
-              buffer += "</ul>"
-              print('hey')
-              burp_extender_instance.header_summary.setText(buffer + "</html>")
 
-              #k += 1
-              break
-              ''' lo que queria hacer aqui es que como a veces en un mismo endpoint no se mandan todas las headers, queria iterar por todas las requests de un cierto endpoint y anadir en otro color los headers que no aparecen en la primera, para indicar que no siempre salen. en la prueba inical que hice iba mal, muy lento y se petaba, pero creo que algo hice mal. creo que ayudaria en general en las tablas estas poner en otra columna el index de la request, y ese index podria usarse para localizar mas facilmente las entradas en el history, y me evitaria loops de comparacioines, y tener que aplicar en esta funcion las regex otra vez. intentar hacer esto, creo que todo ira mas fluido'''
+                extra_symbol = self.extra_symbol(resp_head)
+                
+                resp_head = resp_head.replace('<','< ') #este es porque algunos headers tenian links en html y se renderizaba en cosas raras
+                resp_head_name = resp_head.split(': ')[0]
+                resp_head_value = resp_head.split(': ')[1]
+
+                if resp_head.split(":")[0] == clicked_header:
+                  buffer += '<li><b>' + '<font color="orange">' + resp_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + resp_head_value + "</b><br></li>"
+                else:
+                  buffer += '<li><b>' + resp_head_name + extra_symbol + ":</b> " + resp_head_value + "<br></li>"
+
+              buffer += '</ul>'
+              buffer += '<br><hr><font color=\"white\"><b>*Note:</b> Some enpoints don\'t return some headers sometimes. If you can\'t find the header you selected on the table to the left, please select other endpoint, perhaps from the \"All Endpoints\" tab.</font><br><hr>' 
+              buffer += "<br>Color legend for headers names (check yourself if the value is correct):'
+              buffer += '<ul>"
+              buffer += '<li><b><font color="#00FF00"> [ + ] </font><b>: Security header</li>'
+              buffer += '<li><b><font color="#FF0000"> [ - ] </font><b>: Dangerous or too verbose header</li>'
+              buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
+              buffer += '</ul>'
+              burp_extender_instance.header_summary.setText(buffer + "</html>")
+              
+              break'''
 
 class IssueTable(JTable):
 
@@ -344,10 +375,10 @@ class IssueTable(JTable):
 
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
-
   def __init__(self):
-    selected_host = ""
-    selected_header = ""
+    self.selected_host = ""
+    self.selected_header = ""
+
 
   def registerExtenderCallbacks(self, callbacks):
     self._callbacks = callbacks
@@ -363,7 +394,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.headers_already_in_table = []
     self.last_len = 0
     self.last_row = 0
-    global history1 # variable global con el history de requests
+    ### global history1 # variable global con el history de requests
     history1 = self._callbacks.getProxyHistory()
     global burp_extender_instance
     burp_extender_instance = self
@@ -385,6 +416,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       tip = ""
     
     return tip'''
+
 
   def UpdateHeaders(self, event):
     from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension
@@ -440,10 +472,137 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   # ARREGLAR NOMBRES DE VARIABLES
 
+  def extra_symbol(self, head):
+
+    if head.split(": ")[0].lower() in security_headers:
+      extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
+    elif head.split(": ")[0].lower() in dangerous_headers:
+      extra_symbol = '<b><font color="#FF0000"> [ - ] </font><b>'
+    elif head.split(": ")[0].lower() in potentially_dangerous_headers:
+      extra_symbol = '<b><font color="#4FC3F7"> [ ? ] </font><b>'
+    else:
+      extra_symbol = ""
+    return extra_symbol
+
+
+  def clicked_endpoint(self, tbl, from_click):
+    
+    #global burp_extender_instance 
+    #if event.getClickCount() == 1:
+    #    tbl = event.getSource()
+    #    val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+
+    #global history1
+    print('uuuuuuuuuuuuuu')    
+    print(tbl.getModel().getDataVector())
+    print('uuuuuuuuuuuuuu')    
+    if from_click:
+      print("FROM CLICK")
+      val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+    else:
+      print("NOT FROM CLICK")
+      val = tbl.getModel().getDataVector().elementAt(0)
+      #selected_header = 
+        
+    print('777777777777777')
+    print(val)
+    print('777777777777777')
+    # matchea query string parameters:
+    query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+    # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
+    number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
+    for item in history1:
+      request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+      req_headers = request.split('\r\n')
+      endpoint = req_headers[0]
+      buffer = ""
+
+      # lo siguiente aplica las regex tambien a los elementos del history con los que se compara si el click se ha originado desde la tabla de unique, porque a los elementos que clickamos de ahi ya se les aplico la regex y hace falta para hacer bien la comparacion. a los de all no hay que hacerles esto porque no se les aplica nunca las regex
+      ###if tbl == burp_extender_instance.table_unique_endpoints:
+
+        
+      matches = query_params.findall(endpoint.split('HTTP/')[0])
+      for match in matches:
+        try:
+          endpoint = endpoint.replace(match[1:], '<*>' + match[-1])
+        except:
+          print('Error matching first regex when computing unique endpoints.')
+
+      matches1 = number_between_forwardslash.findall(endpoint.split('HTTP/')[0])
+      for match1 in matches1:
+        try:
+          endpoint = endpoint.replace(match1[1:],  '<*>' )
+        except:
+          print('Error matching second regex when computing unique endpoints.')
+
+      if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
+        
+        
+        for req_head in req_headers[1:]: # este for encuentra el Host header
+          if 'Host: ' in req_head:
+            host = req_head.split(': ')[1]
+            break
+
+        clicked_header = self.selected_header#.split('<font color="orange">')[1].split('</font>')[0]
+
+        #clicked_header = burp_extender_instance.selected_header.split('<font color="orange">')[1].split('</font>')[0]
+        if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
+          burp_extender_instance.header_summary.setText("")
+          buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
+          buffer += '<b>' + req_headers[0] + '</b>'
+          buffer += '<ul padding-left=0>'
+          for req_head in req_headers[1:]: # este for encuentra el Host header
+
+              extra_symbol = self.extra_symbol(req_head)
+
+              req_head = req_head.replace('<','< ')
+              req_head_name = req_head.split(': ')[0]
+              req_head_value = req_head.split(': ')[1]
+
+              if req_head.split(": ")[0] != "Host" and req_head.split(": ")[0] == clicked_header:
+                buffer += '<li><b>' + '<font color="orange">' + req_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + req_head_value + "</b><br></li>"
+
+              elif req_head.split(": ")[0] == "Host":# and req_head.split(": ")[0] == clicked_header:
+                buffer += '<li><b>' + extra_symbol + '<font color="white">' + req_head + "</font></b><br></li>"
+              else:
+                buffer += '<li><b>' + req_head_name + extra_symbol + ":</b> " + req_head_value + "<br></li>"
+
+          buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
+          buffer += '<h2><font color="orange">Response headers:</h2>' 
+          buffer += '<ul padding-left=0>'
+
+          response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+          resp_headers = response.split('\r\n')
+          for resp_head in resp_headers[1:]:
+
+            extra_symbol = self.extra_symbol(resp_head)
+
+            resp_head = resp_head.replace('<','< ') #este es porque algunos headers tenian links en html y se renderizaba en cosas raras
+            resp_head_name = resp_head.split(': ')[0]
+            resp_head_value = resp_head.split(': ')[1]
+
+            if resp_head.split(":")[0] == clicked_header:
+              buffer += '<li><b>' + '<font color="orange">' + resp_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + resp_head_value + "</b><br></li>"
+            else:
+              buffer += '<li><b>' + resp_head_name + extra_symbol + ":</b> " + resp_head_value + "<br></li>"
+
+          buffer += '</ul>'
+          buffer += '<br><hr><font color=\"white\"><b>*Note:</b> Some enpoints don\'t return some headers sometimes. If you can\'t find the header you selected on the table to the left, please select other endpoint, perhaps from the \"All Endpoints\" tab.</font><br><hr>' 
+          buffer += '<br>Color legend for headers names (check yourself if the value is correct):'
+          buffer += '<ul>'
+          buffer += '<li><b><font color="#00FF00"> [ + ] </font><b>: Security header</li>'
+          buffer += '<li><b><font color="#FF0000"> [ X ] </font><b>: Dangerous or too verbose header</li>'
+          buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
+          burp_extender_instance.header_summary.setText(buffer + "</html>")
+
+          break
+
+
   def save_json(self):
     print("save json!")
     return
   
+
   def update_endpoints(self, endpoint_table):
     self.model_unique_endpoints.setRowCount(0)
     self.model_all_endpoints.setRowCount(0)
@@ -476,8 +635,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.unique_entries.append(entry)
         self.model_unique_endpoints.addRow(entry)
 
-    ''' pasa que algunos endpoints no tienen todas las headers siempre, asi que a veces al marcar alguna no sale el header en naranja. poner como otra seccion al final con headers que estan en ese tipo de enpoint pero no justo en la que se ha marcado en ese momento, y explicar eso con un asterisco'''
+    self.table_unique_endpoints.setRowSelectionInterval(0,0) 
+    self.clicked_endpoint(self.table_unique_endpoints, False)
+    #global burp_extender_instance
     return
+
 
   def getUiComponent(self):
     panel = JPanel(GridBagLayout())
@@ -604,6 +766,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     return panel
 
+
   def clear_table(self):
     
     self.model_tab_req.setRowCount(0)
@@ -618,6 +781,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.last_len = 0
     return
 
+
   def filter_entries(self, event):
 
     self.clear_table()
@@ -625,7 +789,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     global history1
     history1 = []
     history1 = self._callbacks.getProxyHistory()
-    global host_endpoint
+    ###global host_endpoint
 
     for item in history1: # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
@@ -705,11 +869,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.last_len = len(history1)
     return
 
+
   def createMenuItems(self, context_menu):
     self.context = context_menu
     menu_list = ArrayList()
     menu_list.add(JMenuItem("Headers", actionPerformed=self.show_window))
     return menu_list
+
 
   def pullRequest(self, event):
     final_text = self.new_header_name.getText() + "&&" + \
@@ -720,6 +886,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.to_submit_text.setLineWrap(True)
     self.to_submit_text.setText(final_text)
     return
+
 
   def show_window(self, event):
 

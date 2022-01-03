@@ -1,0 +1,10 @@
+cachecontrol
+content-security-policy
+strict-transport-security
+publickeypinning
+x-xss-protection
+x-frame-options
+x-content-type-options
+feature-policy
+referrer-policy
+permissions-policy
