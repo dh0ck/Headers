@@ -1,7 +1,7 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
 import shutil, glob, re
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
@@ -597,6 +597,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
           break
 
+  def choose_output_file(self, event):
+    print("chooser")
+    chooser = JFileChooser()
+    return
 
   def save_json(self):
     print("save json!")
@@ -656,12 +660,27 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.filter_but.setBackground(Color(210,101,47))
     JPanel1.add( self.filter_but, c )
 
+
+    preset_filters = DefaultComboBoxModel()
+    preset_filters.addElement("Request + Response")
+    preset_filters.addElement("Request + Response + <meta>")
+    preset_filters.addElement("In scope only (se puede acceder al scope???)")
+    preset_filters.addElement("Security headers only")
+    preset_filters.addElement("Dangerous or unnecessary headers only")
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
     c.gridx = 1 
     c.gridy = y_pos
-    self.filter = JTextField('Filter...')
+    self.filterComboBox = JComboBox(preset_filters)
+    JPanel1.add(self.filterComboBox , c )
+
+    c = GridBagConstraints()
+    c.fill = GridBagConstraints.HORIZONTAL
+    c.weightx = 8
+    c.gridx = 2 
+    c.gridy = y_pos
+    self.filter = JTextField('Or enter keywords (separated by a , )')
     JPanel1.add(self.filter , c )
     
     c = GridBagConstraints()
@@ -742,20 +761,42 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     JPanel2 = JPanel(GridBagLayout())
 
     c = GridBagConstraints()
+    c.gridx = 0 # third column
+    c.gridy = y_pos
+    c.anchor = GridBagConstraints.WEST
+    self.save_but = JButton('<html><b><font color="white">Save headers</font></b></html>', actionPerformed = self.save_json)
+    self.save_but.setBackground(Color(10,101,247))
+    JPanel2.add( self.save_but, c )
+
+    #c = GridBagConstraints()
+    c.gridx += 1
+    c.gridy = y_pos
+    c.anchor = GridBagConstraints.WEST
+    self.save_format = DefaultComboBoxModel()
+    self.save_format.addElement("Choose output format")
+    self.save_format.addElement("TXT: Host -> Header")
+    self.save_format.addElement("TXT: Header -> Host")
+    self.save_format.addElement("TXT: Header -> Host -> Endpoint")
+    self.save_format.addElement("JSON: Host -> Header")
+    self.save_format.addElement("JSON: Header -> Host ")
+    self.save_format.addElement("JSON: Header -> Host -> Endpoint")
+    self.save_ComboBox = JComboBox(self.save_format)
+    JPanel2.add( self.save_ComboBox, c )
+
+    #c = GridBagConstraints()
+    c.gridx += 1 # third column
+    c.gridy = y_pos
+    self.choose_file_but = JButton('<html><b><font color="white">Choose output file</font></b></html>', actionPerformed = self.choose_output_file)
+    JPanel2.add( self.choose_file_but, c )
+
+    #c = GridBagConstraints() #ojo, parece que esto solo hay que ponerlo una vez al principio, comprobar y quitar de donde sobre, hay otras mas arriba descomentadas!!! ejemplo: https://leo.ugr.es/elvira/devel/Tutorial/Java/uiswing/layout/gridbagExample.html
     c.fill = GridBagConstraints.HORIZONTAL
-    c.weightx = 0
-    c.gridx = 1 # third column
+    c.weightx = 1
+    c.gridx += 1 # third column
     c.gridy = y_pos
     self.save_path = JTextField('Save headers to... (full path)')
     JPanel2.add(self.save_path , c )
     
-    c = GridBagConstraints()
-    c.gridx = 0 # third column
-    #y_pos += 1
-    c.gridy = y_pos
-    c.anchor = GridBagConstraints.WEST
-    self.filter_but = JButton("Save headers", actionPerformed = self.save_json)
-    JPanel2.add( self.filter_but, c )
 
     c = GridBagConstraints()
     y_pos += 1
@@ -784,6 +825,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def filter_entries(self, event):
 
+    print('///////////////777')    
+    print(self.filterComboBox.getSelectedItem())
+    print('///////////////777')    
     self.clear_table()
 
     global history1
@@ -845,7 +889,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         k1 = 0
         for host in self.header_dict[key]:
           # Apply the filter:
-          if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Filter...":
+          if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a , )":
             if [key, host] not in self.for_table:
               if k1 == 0 and key not in self.headers_already_in_table:
                 self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
