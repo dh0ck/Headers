@@ -1,6 +1,8 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
-import shutil, glob, re
+import java
+import shutil, glob, re, sys
+from time import sleep
 from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
@@ -130,6 +132,8 @@ for line in resp_headers_description.readlines():
     header_risk = 'Potential risks information unavailable for header ' + header_name
   dict_resp_headers[header_name] = (header_description, header_example, header_url, header_risk)
 resp_headers_description.close()
+
+
 
 
 class IssueTableModel(DefaultTableModel):
@@ -273,93 +277,7 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
         burp_extender_instance.clicked_endpoint(tbl, True)
 
         
-        '''# matchea query string parameters:
-        query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
-        # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
-        number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
 
-        for item in history1:
-          request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
-          req_headers = request.split('\r\n')
-          endpoint = req_headers[0]
-          buffer = ""
-
-          # lo siguiente aplica las regex tambien a los elementos del history con los que se compara si el click se ha originado desde la tabla de unique, porque a los elementos que clickamos de ahi ya se les aplico la regex y hace falta para hacer bien la comparacion. a los de all no hay que hacerles esto porque no se les aplica nunca las regex
-          if tbl == burp_extender_instance.table_unique_endpoints:
-          
-            matches = query_params.findall(endpoint.split('HTTP/')[0])
-            for match in matches:
-              try:
-                endpoint = endpoint.replace(match[1:], '<*>' + match[-1])
-              except:
-                print('Error matching first regex when computing unique endpoints.')
-
-            matches1 = number_between_forwardslash.findall(endpoint.split('HTTP/')[0])
-            for match1 in matches1:
-              try:
-                endpoint = endpoint.replace(match1[1:],  '<*>' )
-              except:
-                print('Error matching second regex when computing unique endpoints.')
-
-          if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
-            
-            for req_head in req_headers[1:]: # este for encuentra el Host header
-              if 'Host: ' in req_head:
-                host = req_head.split(': ')[1]
-                break
-
-            clicked_header = burp_extender_instance.selected_header.split('<font color="orange">')[1].split('</font>')[0]
-            if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
-              burp_extender_instance.header_summary.setText("")
-              buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
-              buffer += '<b>' + req_headers[0] + '</b>'
-              buffer += '<ul padding-left=0>'
-              for req_head in req_headers[1:]: # este for encuentra el Host header
-
-                  extra_symbol = self.extra_symbol(req_head)
-
-                  req_head = req_head.replace('<','< ')
-                  req_head_name = req_head.split(': ')[0]
-                  req_head_value = req_head.split(': ')[1]
-
-                  if req_head.split(": ")[0] != "Host" and req_head.split(": ")[0] == clicked_header:
-                    buffer += '<li><b>' + '<font color="orange">' + req_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + req_head_value + "</b><br></li>"
-
-                  elif req_head.split(": ")[0] == "Host":# and req_head.split(": ")[0] == clicked_header:
-                    buffer += '<li><b>' + extra_symbol + '<font color="white">' + req_head + "</font></b><br></li>"
-                  else:
-                    buffer += '<li><b>' + req_head_name + extra_symbol + ":</b> " + req_head_value + "<br></li>"
-
-              buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
-              buffer += '<h2><font color="orange">Response headers:</h2>' 
-              buffer += '<ul padding-left=0>'
-
-              response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
-              resp_headers = response.split('\r\n')
-              for resp_head in resp_headers[1:]:
-
-                extra_symbol = self.extra_symbol(resp_head)
-                
-                resp_head = resp_head.replace('<','< ') #este es porque algunos headers tenian links en html y se renderizaba en cosas raras
-                resp_head_name = resp_head.split(': ')[0]
-                resp_head_value = resp_head.split(': ')[1]
-
-                if resp_head.split(":")[0] == clicked_header:
-                  buffer += '<li><b>' + '<font color="orange">' + resp_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + resp_head_value + "</b><br></li>"
-                else:
-                  buffer += '<li><b>' + resp_head_name + extra_symbol + ":</b> " + resp_head_value + "<br></li>"
-
-              buffer += '</ul>'
-              buffer += '<br><hr><font color=\"white\"><b>*Note:</b> Some enpoints don\'t return some headers sometimes. If you can\'t find the header you selected on the table to the left, please select other endpoint, perhaps from the \"All Endpoints\" tab.</font><br><hr>' 
-              buffer += "<br>Color legend for headers names (check yourself if the value is correct):'
-              buffer += '<ul>"
-              buffer += '<li><b><font color="#00FF00"> [ + ] </font><b>: Security header</li>'
-              buffer += '<li><b><font color="#FF0000"> [ - ] </font><b>: Dangerous or too verbose header</li>'
-              buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
-              buffer += '</ul>'
-              burp_extender_instance.header_summary.setText(buffer + "</html>")
-              
-              break'''
 
 class IssueTable(JTable):
 
@@ -594,16 +512,26 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           buffer += '<li><b><font color="#FF0000"> [ X ] </font><b>: Dangerous or too verbose header</li>'
           buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
           burp_extender_instance.header_summary.setText(buffer + "</html>")
-
+          
+          # para que el summary no haga scroll down hasta el final al actualizarlo
+          self.header_summary.setSelectionStart(0)
+          self.header_summary.setSelectionEnd(0)
           break
 
   def choose_output_file(self, event):
-    print("chooser")
-    chooser = JFileChooser()
-    return
+      fc = JFileChooser()
+      result = fc.showOpenDialog( None )
+      if result == JFileChooser.APPROVE_OPTION :
+        self.save_path.setText(str(fc.getSelectedFile()))
+        print(str(fc.getSelectedFile()))
 
-  def save_json(self):
+      return
+
+  def save_json(self,event):
+    
     print("save json!")
+
+
     return
   
 
@@ -644,6 +572,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #global burp_extender_instance
     return
 
+    
+
+
+
 
   def getUiComponent(self):
     panel = JPanel(GridBagLayout())
@@ -661,18 +593,18 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     JPanel1.add( self.filter_but, c )
 
 
-    preset_filters = DefaultComboBoxModel()
-    preset_filters.addElement("Request + Response")
-    preset_filters.addElement("Request + Response + <meta>")
-    preset_filters.addElement("In scope only (se puede acceder al scope???)")
-    preset_filters.addElement("Security headers only")
-    preset_filters.addElement("Dangerous or unnecessary headers only")
+    self.preset_filters = DefaultComboBoxModel()
+    self.preset_filters.addElement("Request + Response")
+    self.preset_filters.addElement("Request + Response + <meta>")
+    self.preset_filters.addElement("In scope only (se puede acceder al scope???)")
+    self.preset_filters.addElement("Security headers only")
+    self.preset_filters.addElement("Dangerous or unnecessary headers only")
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
     c.gridx = 1 
     c.gridy = y_pos
-    self.filterComboBox = JComboBox(preset_filters)
+    self.filterComboBox = JComboBox(self.preset_filters)
     JPanel1.add(self.filterComboBox , c )
 
     c = GridBagConstraints()
@@ -682,6 +614,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridy = y_pos
     self.filter = JTextField('Or enter keywords (separated by a , )')
     JPanel1.add(self.filter , c )
+
+
     
     c = GridBagConstraints()
     y_pos =0
@@ -690,6 +624,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.anchor = GridBagConstraints.WEST
     panel.add( JPanel1 , c)
 
+  
+   
 
     # ================== Add empty label ===================== #
 
@@ -712,6 +648,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
     self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in Host:</b></html>')
+    self.colNames_meta = ('<html><b><meta> header name</b></html>','<html><b>Appears in endpoint:</b></html>')
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req, "tab")
@@ -725,15 +662,23 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(100)
     self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(100)
 
+    self.model_tab_meta = IssueTableModel([["",""]], self.colNames_meta)
+    self.table_tab_meta = IssueTable(self.model_tab_meta, "tab")
+
+    self.table_tab_meta.getColumnModel().getColumn(0).setPreferredWidth(100)
+    self.table_tab_meta.getColumnModel().getColumn(1).setPreferredWidth(100)
     # IMPORTANT: tables must be inside a JScrollPane so that the Table headers (that is, the columns names) are visible!!!
     panelTab_req = JPanel(BorderLayout()) 
     panelTab_req.add(JScrollPane(self.table_tab_req))
     panelTab_resp = JPanel(BorderLayout()) 
     panelTab_resp.add(JScrollPane(self.table_tab_resp))
+    panelTab_meta = JPanel(BorderLayout()) 
+    panelTab_meta.add(JScrollPane(self.table_tab_meta))
 
     self.tab_tabs = JTabbedPane() 
     self.tab_tabs.addTab('Requests', panelTab_req)
     self.tab_tabs.addTab('Responses', panelTab_resp)
+    self.tab_tabs.addTab('<meta>', panelTab_meta)
 
     # ================== Add endpoints table ===================== #
 
@@ -749,8 +694,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.endpoint_tabs.addTab('All endpoints', JScrollPane(self.table_all_endpoints))
     
     self.header_summary = JEditorPane("text/html", "")
+    self.scroll_summary = JScrollPane(self.header_summary)
 
-    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, JScrollPane(self.header_summary))
+    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.scroll_summary)#JScrollPane(self.header_summary))
     splt_2.setDividerLocation(300)
 
     splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
@@ -794,7 +740,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.weightx = 1
     c.gridx += 1 # third column
     c.gridy = y_pos
-    self.save_path = JTextField('Save headers to... (full path)')
+    self.save_path = JTextField('Save headers to... (write full path or click "Choose output file". The file will be created)')
     JPanel2.add(self.save_path , c )
     
 
@@ -806,7 +752,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     panel.add( JPanel2 , c)
 
     return panel
-
 
   def clear_table(self):
     
@@ -824,18 +769,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
   def filter_entries(self, event):
-
-    print('///////////////777')    
-    print(self.filterComboBox.getSelectedItem())
-    print('///////////////777')    
     self.clear_table()
 
     global history1
     history1 = []
     history1 = self._callbacks.getProxyHistory()
     ###global host_endpoint
-
-    for item in history1: # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
+    #self.progressBar1.setValue(20)
+    for k_progress, item in enumerate(history1): # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
       
@@ -874,6 +815,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     req_keys = sorted(list(self.req_header_dict.keys()))
     resp_keys = sorted(list(self.resp_header_dict.keys()))
 
+    #self.progressBar1.setValue(50)
     for keys in [req_keys, resp_keys]: # seguro que esto hace lo que debe? es un array de 2 arrays, no uno solo con todas las keys, ok, creo que esto lo puse asi para no duplicar el bloque de abajo y hacer lo mismo para requests y responses con este for sin duplicar codigo, era por eso, 100% seguro
       
       if keys == req_keys:
@@ -1165,5 +1107,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     frame.setVisible(True)
     frame.toFront()
     frame.setAlwaysOnTop(True)
+
+
 
 
