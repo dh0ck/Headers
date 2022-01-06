@@ -1,9 +1,9 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
 import java
-import shutil, glob, re, sys
+import shutil, glob, re, sys, os
 from time import sleep
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
@@ -307,6 +307,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.req_header_dict = {}
     self.resp_header_dict = {}
     self.for_table = []
+    self.header_host_table = []
     self.for_req_table = []
     self.for_resp_table = []
     self.headers_already_in_table = []
@@ -405,26 +406,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def clicked_endpoint(self, tbl, from_click):
     
-    #global burp_extender_instance 
-    #if event.getClickCount() == 1:
-    #    tbl = event.getSource()
-    #    val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
-    #global history1
-    print('uuuuuuuuuuuuuu')    
-    print(tbl.getModel().getDataVector())
-    print('uuuuuuuuuuuuuu')    
     if from_click:
-      print("FROM CLICK")
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
     else:
-      print("NOT FROM CLICK")
       val = tbl.getModel().getDataVector().elementAt(0)
-      #selected_header = 
         
-    print('777777777777777')
-    print(val)
-    print('777777777777777')
     # matchea query string parameters:
     query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
     # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
@@ -528,6 +515,73 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       return
 
   def save_json(self,event):
+    out_type = self.save_ComboBox.getSelectedItem()
+    out_file_name = self.save_path.getText()
+    
+    if out_type == "Choose output format":
+      Error_frame1 = JFrame()#FlowLayout())
+      Error_frame1.setLayout(FlowLayout())
+      Error_frame1.setSize(260, 90)
+      Error_frame1.setLocationRelativeTo(None)
+      #print(os.path.join(os.getcwd(),'error.png'))
+      a=os.getcwd() + '\\error1.png'
+      image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
+      Error_frame1.add(JLabel(ImageIcon(image_path)))
+      #Error_frame1.add(JLabel(ImageIcon(os.path.join(os.getcwd(),'error1.png'))))
+      Error_frame1.add(JLabel("  Please, select output format."))
+      Error_frame1.setVisible(True)
+      Error_frame1.toFront()
+      Error_frame1.setAlwaysOnTop(True)
+    
+      return
+
+    elif out_type == "TXT: Host -> Header":
+      f = open(out_file_name, 'w')
+      f.write("Columns:\n")
+      f.write("Header; Unique Header; Host Name\n\n")
+      f.close()
+
+    elif out_type == "TXT: Header -> Host":
+      f = open(out_file_name, 'w')
+      for line in self.header_host_table:
+        if "----------------" in line[1]:
+          f.write("".join(line) + "\n")
+        else:
+          f.write("; ".join(line) + "\n")
+      f.close()
+
+    elif out_type == "TXT: Header -> Host -> Endpoint":
+      pass
+      '''f = open(out_file_name, 'w')
+      for line in self.header_host_table:
+        f.write(line)
+      f.close()'''
+
+    elif out_type == "JSON: Host -> Header":
+      pass
+      '''f = open(out_file_name, 'w')
+      for line in self.header_host_table:
+        f.write(line)
+      f.close()'''
+
+    elif out_type == "JSON: Header -> Host ":
+      pass
+      '''f = open(out_file_name, 'w')
+      for line in self.header_host_table:
+        f.write(line)
+      f.close()'''
+
+    elif out_type == "JSON: Header -> Host -> Endpoint":
+      pass
+      '''f = open(out_file_name, 'w')
+      for line in self.header_host_table:
+        f.write(line)
+      f.close()'''
+    
+    else:
+      return
+
+
     
     print("save json!")
 
@@ -758,6 +812,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.model_tab_req.setRowCount(0)
     self.model_tab_resp.setRowCount(0)
     self.for_table = []
+    self.header_host_table = []
     self.for_req_table = []
     self.for_resp_table = []
     self.req_header_dict = {}
@@ -770,12 +825,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def filter_entries(self, event):
     self.clear_table()
-
+    
     global history1
     history1 = []
     history1 = self._callbacks.getProxyHistory()
-    ###global host_endpoint
-    #self.progressBar1.setValue(20)
     for k_progress, item in enumerate(history1): # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
@@ -800,7 +853,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         else:
           self.req_header_dict[req_head_name] = [host]
  
-      # anade a otra table las lineas que iran en la extension, poniendo celdas vacias en el header name para no repetir cuando hay varios host con el mismo heade    # ----------------- responses ---------------#
+      # anade a otra table las lineas que iran en la extension, poniendo celdas vacias en el header name para no repetir cuando hay varios host con el mismo header
+      # ----------------- responses ---------------#
       response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
       resp_headers = response.split('\r\n')
       for resp_head in resp_headers[1:]:   
@@ -815,7 +869,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     req_keys = sorted(list(self.req_header_dict.keys()))
     resp_keys = sorted(list(self.resp_header_dict.keys()))
 
-    #self.progressBar1.setValue(50)
+    k2 = 0 # se usa para meter en el output file los titulos de request y response
     for keys in [req_keys, resp_keys]: # seguro que esto hace lo que debe? es un array de 2 arrays, no uno solo con todas las keys, ok, creo que esto lo puse asi para no duplicar el bloque de abajo y hacer lo mismo para requests y responses con este for sin duplicar codigo, era por eso, 100% seguro
       
       if keys == req_keys:
@@ -826,27 +880,39 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.for_table = self.for_resp_table
         self.header_dict = self.resp_header_dict
         self.dataModel_tab = self.model_tab_resp
+        
 
       for key in keys:
+        k2 += 1
         k1 = 0
+        if k2 == 1:
+          self.header_host_table.append(["", "//---------------- REQUEST HEADERS -----------------//", "\n"])
+          
+        if k2 == len(req_keys) + 1:
+          self.header_host_table.append(["\n", "//---------------- RESPONSE HEADERS -----------------//", "\n"])
+
         for host in self.header_dict[key]:
           # Apply the filter:
           if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a , )":
             if [key, host] not in self.for_table:
               if k1 == 0 and key not in self.headers_already_in_table:
                 self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
+                
+                self.header_host_table.append([key, key, host])
                 if key not in self.headers_already_in_table:
                   self.headers_already_in_table.append(key)
                 k1 = 1
               else:
                 self.for_table.append(["", host])
+                self.header_host_table.append([key, "", host])
                 if key not in self.headers_already_in_table:
                   self.headers_already_in_table.append(key)
 
         # Apply the filter to add dash line or not after group of entries for a single header
         if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Filter...":
           self.for_table.append(['<html><b><font color="orange">' + '-'*300 + '</font></b></html>', '<html><b><font color="orange">' + '-'*300 + '</font></b></html>'*300])
-    
+
+      # enter only new rows in for_table, dont reload all the table every time (probably there should be something to check if some entries were deleted form history. create a variable that counts up to 5 every time the button is clicked and then compares the history with the stored history, to check for missing entries that should be removed from the history1 variable or from self.for_table?)
       for table_entry in self.for_table[self.last_len:]:
         self.dataModel_tab.insertRow(self.last_row, table_entry)
         self.last_row += 1
