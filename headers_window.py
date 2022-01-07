@@ -3,7 +3,7 @@ from burp import IContextMenuFactory
 import java
 import shutil, glob, re, sys, os
 from time import sleep
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
@@ -396,7 +396,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if head.split(": ")[0].lower() in security_headers:
       extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
     elif head.split(": ")[0].lower() in dangerous_headers:
-      extra_symbol = '<b><font color="#FF0000"> [ - ] </font><b>'
+      extra_symbol = '<b><font color="#FF0000"> [ X ] </font><b>'
     elif head.split(": ")[0].lower() in potentially_dangerous_headers:
       extra_symbol = '<b><font color="#4FC3F7"> [ ? ] </font><b>'
     else:
@@ -456,7 +456,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
           buffer += '<b>' + req_headers[0] + '</b>'
           buffer += '<ul padding-left=0>'
-          for req_head in req_headers[1:]: # este for encuentra el Host header
+          for req_head in sorted(req_headers[1:]): # este for encuentra el Host header
 
               extra_symbol = self.extra_symbol(req_head)
 
@@ -478,7 +478,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
           response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
-          for resp_head in resp_headers[1:]:
+          for resp_head in sorted(resp_headers[1:]):
 
             extra_symbol = self.extra_symbol(resp_head)
 
@@ -505,6 +505,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           self.header_summary.setSelectionEnd(0)
           break
 
+
   def choose_output_file(self, event):
       fc = JFileChooser()
       result = fc.showOpenDialog( None )
@@ -514,41 +515,106 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
       return
 
+
   def save_json(self,event):
     out_type = self.save_ComboBox.getSelectedItem()
     out_file_name = self.save_path.getText()
     
-    if out_type == "Choose output format":
-      Error_frame1 = JFrame()#FlowLayout())
+
+    hosts = []
+    headers = []
+    unique_headers = []
+    for line in self.header_host_table:
+        hosts.append(line[2])
+        headers.append(line[0]) 
+        unique_headers.append(line[1]) 
+
+    #sorted_hosts = sorted(hosts)
+    unique_hosts = sorted(list(set(hosts)))
+
+    self.host_header_table = []
+
+    for unique_host in unique_hosts:
+      k = 0
+      for line in self.header_host_table:
+        if line[2] == unique_host:
+          if k == 0:
+            self.host_header_table.append([unique_host , unique_host , line[0]])
+          else:
+            self.host_header_table.append([unique_host , "" , line[0]])
+          k += 1
+
+
+    Error_frame3 = JFrame()#FlowLayout())
+    Error_frame3.setLayout(FlowLayout())
+    Error_frame3.setSize(260, 90)
+    Error_frame3.setLocationRelativeTo(None)
+    a=os.getcwd() + '\\error1.png'
+    image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
+    Error_frame3.add(JLabel(ImageIcon(image_path)))
+    Error_frame3.add(JLabel("  Wrong output file."))
+    #Error_frame3.setVisible(True)
+    Error_frame3.toFront()
+    Error_frame3.setAlwaysOnTop(True)
+    
+    if "Save headers to..." in out_file_name or out_file_name == "":
+      Error_frame1 = JFrame()
       Error_frame1.setLayout(FlowLayout())
       Error_frame1.setSize(260, 90)
       Error_frame1.setLocationRelativeTo(None)
-      #print(os.path.join(os.getcwd(),'error.png'))
       a=os.getcwd() + '\\error1.png'
       image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
       Error_frame1.add(JLabel(ImageIcon(image_path)))
-      #Error_frame1.add(JLabel(ImageIcon(os.path.join(os.getcwd(),'error1.png'))))
-      Error_frame1.add(JLabel("  Please, select output format."))
+      Error_frame1.add(JLabel("  Please, enter output file path."))
       Error_frame1.setVisible(True)
       Error_frame1.toFront()
       Error_frame1.setAlwaysOnTop(True)
+
+
+      return
+
+    if out_type == "Choose output format":
+      Error_frame2 = JFrame()#FlowLayout())
+      Error_frame2.setLayout(FlowLayout())
+      Error_frame2.setSize(260, 90)
+      Error_frame2.setLocationRelativeTo(None)
+      a=os.getcwd() + '\\error1.png'
+      image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
+      Error_frame2.add(JLabel(ImageIcon(image_path)))
+      Error_frame2.add(JLabel("  Please, select output format."))
+      Error_frame2.setVisible(True)
+      Error_frame2.toFront()
+      Error_frame2.setAlwaysOnTop(True)
     
       return
 
     elif out_type == "TXT: Host -> Header":
-      f = open(out_file_name, 'w')
-      f.write("Columns:\n")
-      f.write("Header; Unique Header; Host Name\n\n")
-      f.close()
+      try:
+        f = open(out_file_name, 'w')
+        f.write("Columns:\n")
+        f.write("Host; Header; Unique Header\n\n")
+
+        for line in self.host_header_table:
+          f.write("; ".join(line) + "\n")
+        f.close()
+      except:
+        Error_frame3.setVisible(True)
+
+
 
     elif out_type == "TXT: Header -> Host":
-      f = open(out_file_name, 'w')
-      for line in self.header_host_table:
-        if "----------------" in line[1]:
-          f.write("".join(line) + "\n")
-        else:
-          f.write("; ".join(line) + "\n")
-      f.close()
+      try:
+        f = open(out_file_name, 'w')
+        f.write("Columns:\n")
+        f.write("Header; Unique Header; Host Name\n\n")
+        for line in self.header_host_table:
+          if "----------------" in line[1]:
+            f.write("".join(line) + "\n")
+          else:
+            f.write("; ".join(line) + "\n")
+        f.close()
+      except:
+        Error_frame3.setVisible(True)
 
     elif out_type == "TXT: Header -> Host -> Endpoint":
       pass
@@ -625,10 +691,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.clicked_endpoint(self.table_unique_endpoints, False)
     #global burp_extender_instance
     return
-
-    
-
-
 
 
   def getUiComponent(self):
@@ -750,7 +812,24 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.header_summary = JEditorPane("text/html", "")
     self.scroll_summary = JScrollPane(self.header_summary)
 
-    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.scroll_summary)#JScrollPane(self.header_summary))
+    self.summary_summary = JEditorPane("text/html", "")
+    self.scroll_summary_summary = JScrollPane(self.summary_summary)
+
+    self.checkbox_panel = JPanel()
+    self.checkbox_panel.setLayout(FlowLayout())
+    self.checkbox_panel.add(JCheckBox("Security headers"))
+    self.checkbox_panel.add(JCheckBox("Potentially dangerous headers"))
+    self.checkbox_panel.add(JCheckBox("Dangerous headers"))
+
+    self.summary_panel = JPanel()
+    self.summary_panel.setLayout(BoxLayout(self.summary_panel,BoxLayout.Y_AXIS))
+    self.summary_panel.add(self.checkbox_panel)
+    self.summary_panel.add(self.summary_summary)
+
+    self.splt_3 = JSplitPane(JSplitPane.VERTICAL_SPLIT, self.scroll_summary, self.summary_panel)
+    self.splt_3.setDividerLocation(550)
+
+    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.splt_3)#self.scroll_summary)
     splt_2.setDividerLocation(300)
 
     splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
@@ -806,6 +885,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     panel.add( JPanel2 , c)
 
     return panel
+
 
   def clear_table(self):
     
@@ -909,7 +989,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                   self.headers_already_in_table.append(key)
 
         # Apply the filter to add dash line or not after group of entries for a single header
-        if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Filter...":
+        if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a , )":
           self.for_table.append(['<html><b><font color="orange">' + '-'*300 + '</font></b></html>', '<html><b><font color="orange">' + '-'*300 + '</font></b></html>'*300])
 
       # enter only new rows in for_table, dont reload all the table every time (probably there should be something to check if some entries were deleted form history. create a variable that counts up to 5 every time the button is clicked and then compares the history with the stored history, to check for missing entries that should be removed from the history1 variable or from self.for_table?)
@@ -1101,7 +1181,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     # ========================== add text fields ============================== #
     fields_names = ['   Header Name:  ', '   Header Description:  ', '   Example:  ', '   URL explaining header:  ', '   Potential header risks:  ']
 
-    self.new_header_name = self.new_header_description = self.new_header_example = self.new_header_url = self.new_header_risks = JTextField('')
+    self.new_header_name = JTextField('')
+    self.new_header_description = JTextField('')
+    self.new_header_example = JTextField('')
+    self.new_header_url = JTextField('')
+    self.new_header_risks = JTextField('')
 
     fields = [ self.new_header_name, self.new_header_description, self.new_header_example, self.new_header_url, self.new_header_risks ]
 
@@ -1118,7 +1202,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       c.weightx = 1
       c.gridx = 1 
       c.gridy = y_pos 
-      
       panelTab3.add(fields[k] , c)
 
     # ======================= add button ================================= #
@@ -1155,10 +1238,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     a5 = " "
     a6 = "    If you have requests or suggestions please let me know via telegram (@dh0ck) or send pull requests to the GitHub repo."
     a7 = " "
-    a8 = "    Acknoledegments: I adapted some code from: https://github.com/parsiya/Parsia-Code/tree/master/jython-swing-2/07-ObjectTableModel"
-    a9 = " "
+    a8 = " "
 
-    for label in [a1, a2, a3, a4, a5, a6, a7, a8, a9]:
+    for label in [a1, a2, a3, a4, a5, a6, a7, a8]:
       panelTab4.add(JLabel(label))
 
     panelTab4.add(JButton("Update headers info", actionPerformed=self.UpdateHeaders))
