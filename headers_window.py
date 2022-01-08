@@ -238,17 +238,11 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
         ###global burp_extender_instance #variable global que representa la instancia de IBurpExtender que se crea al cargar la extension. se usa para acceder desde fuera (especialmente desde el mouse event handler para actualizar la endpoint_table) a propiedades y metodos de la instancia "principal" de la extension. el valor se lo doy dentro de la intancia, igualando esta variable a self
         global selected_header_name
         selected_header_name = header_value
-        print('yyyyyyyy')
-        print(header_value)
-        print('yyyyyyyy')
         
         burp_extender_instance.selected_host = clicked_host
         burp_extender_instance.selected_header = header_value#header # este lo settea ok para la de endpoints
         burp_extender_instance.update_endpoints(endpoint_table)
         
-
-
-
 
 class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
@@ -276,8 +270,6 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
         
         burp_extender_instance.clicked_endpoint(tbl, True)
 
-        
-
 
 class IssueTable(JTable):
 
@@ -296,6 +288,32 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def __init__(self):
     self.selected_host = ""
     self.selected_header = ""
+
+  def apply_config(self):
+    print("Applying config...")
+    f = open("config.txt","r")
+    for line in f.readlines():
+      feature = line.split(' -- ')[0]
+      value = line.split(' -- ')[1].strip('\n')
+      if feature == "last_save_type":
+        self.save_format.setSelectedItem(value)
+        self.config_dict[feature] = value
+        #self.save_format_config_value = value
+      elif feature == "last_output_file":
+        self.save_path.setText(value)        
+        self.config_dict[feature] = value
+        #self.save_path_config_value = value
+      elif feature == "last_filter_type":
+        self.preset_filters.setSelectedItem(value)
+        self.config_dict[feature] = value
+        #self.preset_filters_config_value = value
+    f.close()
+
+  def update_config(self):#, feature, value):
+    f = open("config.txt", "w")
+    for key in list(self.config_dict.keys()):
+      f.write(key + " -- " + self.config_dict[key] + "\n")  #comprobar 
+    f.close()
 
 
   def registerExtenderCallbacks(self, callbacks):
@@ -317,6 +335,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     history1 = self._callbacks.getProxyHistory()
     global burp_extender_instance
     burp_extender_instance = self
+    self.config_dict = {}
+    self.apply_config()
+    
     return
     
 
@@ -529,8 +550,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         headers.append(line[0]) 
         unique_headers.append(line[1]) 
 
-    #sorted_hosts = sorted(hosts)
     unique_hosts = sorted(list(set(hosts)))
+    try:
+      unique_hosts.remove('\n')
+    except:
+      pass
 
     self.host_header_table = []
 
@@ -544,7 +568,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             self.host_header_table.append([unique_host , "" , line[0]])
           k += 1
 
-
     Error_frame3 = JFrame()#FlowLayout())
     Error_frame3.setLayout(FlowLayout())
     Error_frame3.setSize(260, 90)
@@ -553,7 +576,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
     Error_frame3.add(JLabel(ImageIcon(image_path)))
     Error_frame3.add(JLabel("  Wrong output file."))
-    #Error_frame3.setVisible(True)
     Error_frame3.toFront()
     Error_frame3.setAlwaysOnTop(True)
     
@@ -600,8 +622,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       except:
         Error_frame3.setVisible(True)
 
-
-
     elif out_type == "TXT: Header -> Host":
       try:
         f = open(out_file_name, 'w')
@@ -616,12 +636,26 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       except:
         Error_frame3.setVisible(True)
 
-    elif out_type == "TXT: Header -> Host -> Endpoint":
-      pass
-      '''f = open(out_file_name, 'w')
-      for line in self.header_host_table:
-        f.write(line)
-      f.close()'''
+    elif out_type == "TXT: Host -> Endpoint -> Headers":
+      
+      f = open(out_file_name, 'w')
+      for unique_host in unique_hosts:
+        endpoint_already_present = []
+        for item in history1:
+          request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+          req_headers = request.split('\r\n')
+          response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+          resp_headers = response.split('\r\n')
+          for req_head in req_headers:
+            if 'Host: ' in req_head:
+              if unique_host == req_head.split(': ')[1]:
+                endpoint = self.apply_regex(req_headers[0])
+                if endpoint not in endpoint_already_present:
+                  f.write(unique_host + '; ' + endpoint + '; ' + "Request headers: " + str(req_headers[1:]) + " Response headers: " + str(resp_headers[1:]) + '\n')
+                  endpoint_already_present.append(endpoint)
+              else:
+                break
+      f.close() 
 
     elif out_type == "JSON: Host -> Header":
       pass
@@ -651,9 +685,38 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     print("save json!")
 
+    update_now = False
+    if self.save_format.getSelectedItem() != self.config_dict["last_save_type"]:
+      self.config_dict["last_save_type"] = self.save_format.getSelectedItem()
+      update_now = True
+    if self.save_path.getText() != self.config_dict["last_output_file"]:
+      self.config_dict["last_output_file"] = self.save_path.getText()
+      update_now = True
+    if update_now:
+      self.update_config()#"last_filter_type", self.preset_filters.getSelectedItem())
 
     return
   
+  def apply_regex(self, string_for_regex):
+    #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+    query_params = re.compile('=.*?&|=.*? ') 
+
+    # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo
+    number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
+
+    matches = query_params.findall(string_for_regex.split('HTTP/')[0])
+    for match in matches:
+      try:
+        string_for_regex = string_for_regex.replace(match[1:], '<*>' + match[-1])
+      except:
+        print('Error matching first regex when computing unique endpoints.')
+    matches1 = number_between_forwardslash.findall(string_for_regex.split('HTTP/')[0])
+    for match1 in matches1:
+      try:
+        string_for_regex = string_for_regex.replace(match1[1:],  '<*>' )
+      except:
+        print('Error matching second regex when computing unique endpoints.')
+    return string_for_regex
 
   def update_endpoints(self, endpoint_table):
     self.model_unique_endpoints.setRowCount(0)
@@ -664,24 +727,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.model_all_endpoints.addRow(entry)
 
     # matchea query string parameters:
-    query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+    #query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
     # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
-    number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
+    #number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
     for entry in endpoint_table:
-
-      matches = query_params.findall(entry[0].split('HTTP/')[0])
-      for match in matches:
-        try:
-          entry[0] = entry[0].replace(match[1:], '<*>' + match[-1])
-        except:
-          print('Error matching first regex when computing unique endpoints.')
-
-      matches1 = number_between_forwardslash.findall(entry[0].split('HTTP/')[0])
-      for match1 in matches1:
-        try:
-          entry[0] = entry[0].replace(match1[1:],  '<*>' )
-        except:
-          print('Error matching second regex when computing unique endpoints.')
+      entry[0] = self.apply_regex(entry[0])
         
       if entry not in self.unique_entries:
         self.unique_entries.append(entry)
@@ -692,9 +742,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #global burp_extender_instance
     return
 
+
   def addRB( self, pane, bg, text ) :
       bg.add(pane.add(JRadioButton(text,itemStateChanged = self.toggle)))
       return
+
 
   def toggle( self, event ) :
     text = event.getItem().getText()
@@ -706,6 +758,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.file_to_add_headers = "dangerous_headers.txt"
     return
 
+
   def add_header_to_file(self, event):
     filename = self.file_to_add_headers
     text = self.header_to_add.getText()
@@ -714,9 +767,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f.close()
     self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
 
-
-    
-    
 
   def add_headers_to_categories(self, event):
     self.file_to_add_headers = ""
@@ -776,6 +826,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.preset_filters.addElement("Request + Response + <meta>")
     self.preset_filters.addElement("In scope only (se puede acceder al scope???)")
     self.preset_filters.addElement("Security headers only")
+    self.preset_filters.addElement("Security headers only")
     self.preset_filters.addElement("Dangerous or unnecessary headers only")
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
@@ -791,6 +842,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridx = 2 
     c.gridy = y_pos
     self.filter = JTextField('Or enter keywords (separated by a , )')
+    self.filter.addActionListener(self.filter_entries)
     JPanel1.add(self.filter , c )
 
 
@@ -925,7 +977,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_format.addElement("Choose output format")
     self.save_format.addElement("TXT: Host -> Header")
     self.save_format.addElement("TXT: Header -> Host")
-    self.save_format.addElement("TXT: Header -> Host -> Endpoint")
+    self.save_format.addElement("TXT: Host -> Endpoint -> Headers")
     self.save_format.addElement("TXT: Only security headers")
     self.save_format.addElement("TXT: Only potentially dangerous headers")
     self.save_format.addElement("TXT: Only dangerous or verbose headers")
@@ -1075,6 +1127,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.last_row = 0
       self.for_table = []
     self.last_len = len(history1)
+
+    if self.preset_filters.getSelectedItem() != self.config_dict["last_filter_type"]:
+      self.config_dict["last_filter_type"] = self.preset_filters.getSelectedItem()
+      self.update_config()#"last_filter_type", self.preset_filters.getSelectedItem())
     return
 
 
