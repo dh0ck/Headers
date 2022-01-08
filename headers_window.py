@@ -3,7 +3,7 @@ from burp import IContextMenuFactory
 import java
 import shutil, glob, re, sys, os
 from time import sleep
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox, JRadioButton, ButtonGroup
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
@@ -692,6 +692,68 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #global burp_extender_instance
     return
 
+  def addRB( self, pane, bg, text ) :
+      bg.add(pane.add(JRadioButton(text,itemStateChanged = self.toggle)))
+      return
+
+  def toggle( self, event ) :
+    text = event.getItem().getText()
+    if text == "Security headers":
+      self.file_to_add_headers = "security_headers.txt"
+    elif text == "Potentially dangerous headers":
+      self.file_to_add_headers = "potentially_dangerous_headers.txt"
+    elif text == "Dangerous or verbose headers":
+      self.file_to_add_headers = "dangerous_headers.txt"
+    return
+
+  def add_header_to_file(self, event):
+    filename = self.file_to_add_headers
+    text = self.header_to_add.getText()
+    f = open(filename,"a")
+    f.write("\n" + text)
+    f.close()
+    self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
+
+
+    
+    
+
+  def add_headers_to_categories(self, event):
+    self.file_to_add_headers = ""
+    add_headers = JFrame("Add new header to categories")
+    add_headers_panel = JPanel()
+    add_headers_panel.setLayout(BoxLayout(add_headers_panel, BoxLayout.Y_AXIS ) )
+
+    bg = ButtonGroup()
+    add_headers_panel.add( JLabel( 'Select category to add header:' ) )
+    self.addRB( add_headers_panel, bg, 'Security headers' )
+    self.addRB( add_headers_panel, bg, 'Potentially dangerous headers' )
+    self.addRB( add_headers_panel, bg, 'Dangerous or verbose headers' )
+    add_headers_panel.add( JLabel( ' ' ) )
+    add_headers_panel.add( JLabel( 'New header to be added:' ) )
+    
+    self.header_to_add = add_headers_panel.add(JTextField("New header"))
+    self.add_header_button = add_headers_panel.add(JButton('Add new header', actionPerformed = self.add_header_to_file))
+    self.add_header_button.setForeground(Color.WHITE)
+    self.add_header_button.setBackground(Color(10,101,247))
+
+    self.added_header_info = JTextArea("", rows=2, editable=False)
+    self.added_header_info.setLineWrap(True)
+    add_headers_panel.add(JScrollPane(self.added_header_info))
+
+    
+    
+
+    add_headers.setSize(400, 220)
+    add_headers.add(add_headers_panel)
+    add_headers.setLocationRelativeTo(None)
+    add_headers.setVisible( True )
+    add_headers.toFront()
+    add_headers.setAlwaysOnTop(True)
+
+    
+    return
+    
 
   def getUiComponent(self):
     panel = JPanel(GridBagLayout())
@@ -820,6 +882,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.checkbox_panel.add(JCheckBox("Security headers"))
     self.checkbox_panel.add(JCheckBox("Potentially dangerous headers"))
     self.checkbox_panel.add(JCheckBox("Dangerous headers"))
+    self.checkbox_panel.add(JButton("Add new headers", actionPerformed = self.add_headers_to_categories))
 
     self.summary_panel = JPanel()
     self.summary_panel.setLayout(BoxLayout(self.summary_panel,BoxLayout.Y_AXIS))
@@ -847,6 +910,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_but.setBackground(Color(10,101,247))
     JPanel2.add( self.save_but, c )
 
+    c.gridx += 1
+    c.gridy = y_pos
+    c.anchor = GridBagConstraints.WEST
+    self.save_but = JButton('<html><b><font color="white">Preview</font></b></html>', actionPerformed = self.save_json)
+    self.save_but.setBackground(Color(10,101,247))
+    JPanel2.add( self.save_but, c )
+
     #c = GridBagConstraints()
     c.gridx += 1
     c.gridy = y_pos
@@ -856,9 +926,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_format.addElement("TXT: Host -> Header")
     self.save_format.addElement("TXT: Header -> Host")
     self.save_format.addElement("TXT: Header -> Host -> Endpoint")
+    self.save_format.addElement("TXT: Only security headers")
+    self.save_format.addElement("TXT: Only potentially dangerous headers")
+    self.save_format.addElement("TXT: Only dangerous or verbose headers")
     self.save_format.addElement("JSON: Host -> Header")
     self.save_format.addElement("JSON: Header -> Host ")
     self.save_format.addElement("JSON: Header -> Host -> Endpoint")
+    self.save_format.addElement("JSON: Only security headers")
+    self.save_format.addElement("JSON: Only potentially dangerous headers")
+    self.save_format.addElement("JSON: Only dangerous or verbose headers")
     self.save_ComboBox = JComboBox(self.save_format)
     JPanel2.add( self.save_ComboBox, c )
 
