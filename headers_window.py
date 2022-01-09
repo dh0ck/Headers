@@ -146,7 +146,7 @@ class IssueTableModel(DefaultTableModel):
 
     def isCellEditable(self, row, column):
         """Returns True if cells are editable."""
-        canEdit = [False, False]
+        canEdit = [False, False, False]
         return canEdit[column]
 
 
@@ -315,6 +315,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       f.write(key + " -- " + self.config_dict[key] + "\n")  #comprobar 
     f.close()
 
+  def compile_regex(self):
+    #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
+    self.query_params = re.compile('=.*?&|=.*? ') 
+
+    # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo
+    self.number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
 
   def registerExtenderCallbacks(self, callbacks):
     self._callbacks = callbacks
@@ -337,6 +343,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     burp_extender_instance = self
     self.config_dict = {}
     self.apply_config()
+    self.compile_regex()
     
     return
     
@@ -433,33 +440,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     else:
       val = tbl.getModel().getDataVector().elementAt(0)
         
-    # matchea query string parameters:
-    query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
-    # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
-    number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
     for item in history1:
       request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
       endpoint = req_headers[0]
       buffer = ""
 
-      # lo siguiente aplica las regex tambien a los elementos del history con los que se compara si el click se ha originado desde la tabla de unique, porque a los elementos que clickamos de ahi ya se les aplico la regex y hace falta para hacer bien la comparacion. a los de all no hay que hacerles esto porque no se les aplica nunca las regex
-      ###if tbl == burp_extender_instance.table_unique_endpoints:
-
-        
-      matches = query_params.findall(endpoint.split('HTTP/')[0])
-      for match in matches:
-        try:
-          endpoint = endpoint.replace(match[1:], '<*>' + match[-1])
-        except:
-          print('Error matching first regex when computing unique endpoints.')
-
-      matches1 = number_between_forwardslash.findall(endpoint.split('HTTP/')[0])
-      for match1 in matches1:
-        try:
-          endpoint = endpoint.replace(match1[1:],  '<*>' )
-        except:
-          print('Error matching second regex when computing unique endpoints.')
+      endpoint = self.apply_regex(endpoint)  
 
       if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
         
@@ -469,9 +456,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             host = req_head.split(': ')[1]
             break
 
-        clicked_header = self.selected_header#.split('<font color="orange">')[1].split('</font>')[0]
+        clicked_header = self.selected_header
 
-        #clicked_header = burp_extender_instance.selected_header.split('<font color="orange">')[1].split('</font>')[0]
         if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
           burp_extender_instance.header_summary.setText("")
           buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
@@ -488,7 +474,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               if req_head.split(": ")[0] != "Host" and req_head.split(": ")[0] == clicked_header:
                 buffer += '<li><b>' + '<font color="orange">' + req_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + req_head_value + "</b><br></li>"
 
-              elif req_head.split(": ")[0] == "Host":# and req_head.split(": ")[0] == clicked_header:
+              elif req_head.split(": ")[0] == "Host":
                 buffer += '<li><b>' + extra_symbol + '<font color="white">' + req_head + "</font></b><br></li>"
               else:
                 buffer += '<li><b>' + req_head_name + extra_symbol + ":</b> " + req_head_value + "<br></li>"
@@ -614,7 +600,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       try:
         f = open(out_file_name, 'w')
         f.write("Columns:\n")
-        f.write("Host; Header; Unique Header\n\n")
+        f.write("Host; Unique Host; Header\n\n")
 
         for line in self.host_header_table:
           f.write("; ".join(line) + "\n")
@@ -658,11 +644,43 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       f.close() 
 
     elif out_type == "JSON: Host -> Header":
-      pass
-      '''f = open(out_file_name, 'w')
-      for line in self.header_host_table:
-        f.write(line)
-      f.close()'''
+      try:
+        first = True
+        k = 0
+        f = open(out_file_name, 'w')
+        
+        f.write("{\n")
+        all_hosts = [self.host_header_table[i][1] for i in range(len(self.host_header_table))]
+        #all_hosts.remove('') #for some reason this is not removing the empty element '', so I leave it commented and subtract 2 instead of 1 from the lenght in the if k < len... a few lines below
+        print(set(all_hosts))
+        for line in self.host_header_table:
+          
+          [host1, unique_host1, header] = line
+          if unique_host1 != "":
+            if not first:
+              arr = str(arr_headers)
+              arr = arr.replace("u'", "'")
+              arr = arr.replace("'", '"')
+              
+              if k < len(set(all_hosts)) - 2: 
+                f.write('    "' + host1 + '":' + arr + ',\n' )
+              else:
+                f.write('    "' + host1 + '":' + arr + '\n' )
+              
+            arr_headers = []
+            arr_headers.append(header)
+            k += 1
+            
+          else:
+            arr_headers.append(header)
+            first = False
+
+
+        f.write("}")
+        f.close()
+
+      except:
+        Error_frame3.setVisible(True)
 
     elif out_type == "JSON: Header -> Host ":
       pass
@@ -699,20 +717,22 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   
   def apply_regex(self, string_for_regex):
     #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
-    query_params = re.compile('=.*?&|=.*? ') 
+    #query_params = re.compile('=.*?&|=.*? ') 
 
     # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo
-    number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
+    #number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
 
-    matches = query_params.findall(string_for_regex.split('HTTP/')[0])
+    matches = self.query_params.findall(string_for_regex.split('HTTP/')[0])
     for match in matches:
       try:
+        #string_for_regex = string_for_regex.replace(match[1:], '<*>' + match[-1])
         string_for_regex = string_for_regex.replace(match[1:], '<*>' + match[-1])
       except:
         print('Error matching first regex when computing unique endpoints.')
-    matches1 = number_between_forwardslash.findall(string_for_regex.split('HTTP/')[0])
+    matches1 = self.number_between_forwardslash.findall(string_for_regex.split('HTTP/')[0])
     for match1 in matches1:
       try:
+        #string_for_regex = string_for_regex.replace(match1[1:],  '<html><font color=orange>&lt;*&gt;</font></html>' )
         string_for_regex = string_for_regex.replace(match1[1:],  '<*>' )
       except:
         print('Error matching second regex when computing unique endpoints.')
@@ -726,20 +746,21 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for entry in endpoint_table:
       self.model_all_endpoints.addRow(entry)
 
-    # matchea query string parameters:
-    #query_params = re.compile('=.*?&|=.*? ') #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
-    # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo:
-    #number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
     for entry in endpoint_table:
       entry[0] = self.apply_regex(entry[0])
         
       if entry not in self.unique_entries:
         self.unique_entries.append(entry)
-        self.model_unique_endpoints.addRow(entry)
+        #entry[0] = '<html>' + entry[0].replace('<*>','<font color=orange>&lt;*&gt;</font>') + '</html>'
+        ##print(entry[0])
+        ##method = entry[0].split(' ')[0]
+        ##http_version = entry[0].split(' ')[-1]
+        ##url = ' '.join(entry[0].split(' ')[1:-1])
+        ##self.model_unique_endpoints.addRow([method, http_version, url])
+        self.model_unique_endpoints.addRow( [entry[0]])
 
     self.table_unique_endpoints.setRowSelectionInterval(0,0) 
     self.clicked_endpoint(self.table_unique_endpoints, False)
-    #global burp_extender_instance
     return
 
 
@@ -912,7 +933,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # ================== Add endpoints table ===================== #
 
+    ##self.model_unique_endpoints = IssueTableModel([[""]], ["HTTP method","HTTP version", "URL"])
     self.model_unique_endpoints = IssueTableModel([[""]], ["Unique endpoints for selected host"])
+
+
+
     self.table_unique_endpoints = IssueTable(self.model_unique_endpoints, "endpoints")
 
     self.model_all_endpoints = IssueTableModel([[""]], ["All endpoints for selected host"])
@@ -944,7 +969,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.splt_3 = JSplitPane(JSplitPane.VERTICAL_SPLIT, self.scroll_summary, self.summary_panel)
     self.splt_3.setDividerLocation(550)
 
-    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.splt_3)#self.scroll_summary)
+    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.endpoint_tabs), self.splt_3)#self.scroll_summary)
     splt_2.setDividerLocation(300)
 
     splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
