@@ -675,7 +675,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             arr_headers.append(header)
             first = False
 
-
         f.write("}")
         f.close()
 
@@ -862,7 +861,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.weightx = 8
     c.gridx = 2 
     c.gridy = y_pos
-    self.filter = JTextField('Or enter keywords (separated by a , )')
+    self.filter = JTextField('Or enter keywords (separated by a comma)')
     self.filter.addActionListener(self.filter_entries)
     JPanel1.add(self.filter , c )
 
@@ -1116,6 +1115,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         
 
       for key in keys:
+        added_something = False #used at the end of the loop to determine if a dash line should be added
         k2 += 1
         k1 = 0
         if k2 == 1:
@@ -1126,24 +1126,30 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         for host in self.header_dict[key]:
           # Apply the filter:
-          if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a , )":
-            if [key, host] not in self.for_table:
-              if k1 == 0 and key not in self.headers_already_in_table:
-                self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
-                
-                self.header_host_table.append([key, key, host])
-                if key not in self.headers_already_in_table:
-                  self.headers_already_in_table.append(key)
-                k1 = 1
-              else:
-                self.for_table.append(["", host])
-                self.header_host_table.append([key, "", host])
-                if key not in self.headers_already_in_table:
-                  self.headers_already_in_table.append(key)
 
-        # Apply the filter to add dash line or not after group of entries for a single header
-        if self.filter.getText().lower() in host.lower() or self.filter.getText().lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a , )":
-          self.for_table.append(['<html><b><font color="orange">' + '-'*300 + '</font></b></html>', '<html><b><font color="orange">' + '-'*300 + '</font></b></html>'*300])
+          keywords = self.filter.getText().lower().split(',')
+
+          for keyword in keywords:
+            if keyword.strip() in host.lower() or keyword in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
+              if [key, host] not in self.for_table:
+                if k1 == 0 and key not in self.headers_already_in_table:
+                  self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
+                  added_something = True
+                  self.header_host_table.append([key, key, host])
+                  if key not in self.headers_already_in_table:
+                    self.headers_already_in_table.append(key)
+                  k1 = 1
+                else:
+                  self.for_table.append(["", host])
+                  self.header_host_table.append([key, "", host])
+                  if key not in self.headers_already_in_table:
+                    self.headers_already_in_table.append(key)
+
+
+
+        # if some line was added to the header - host table, add a dashed line at the end. If not, don't add it
+        if added_something:
+          self.for_table.append(['<html><b><font color="orange">' + '-' * 300 + '</font></b></html>', '<html><b><font color="orange">' + '-' * 300 + '</font></b></html>' * 300])
 
       # enter only new rows in for_table, dont reload all the table every time (probably there should be something to check if some entries were deleted form history. create a variable that counts up to 5 every time the button is clicked and then compares the history with the stored history, to check for missing entries that should be removed from the history1 variable or from self.for_table?)
       for table_entry in self.for_table[self.last_len:]:
@@ -1153,9 +1159,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.for_table = []
     self.last_len = len(history1)
 
+    # update config file with last filter type used
     if self.preset_filters.getSelectedItem() != self.config_dict["last_filter_type"]:
       self.config_dict["last_filter_type"] = self.preset_filters.getSelectedItem()
-      self.update_config()#"last_filter_type", self.preset_filters.getSelectedItem())
+      self.update_config()
     return
 
 
