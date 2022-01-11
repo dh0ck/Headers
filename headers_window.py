@@ -261,13 +261,9 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
     def mouseClicked(self, event):
             
-        ###global burp_extender_instance 
         if event.getClickCount() == 1:
             tbl = event.getSource()
-            #val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
-        #global history1
-        
         burp_extender_instance.clicked_endpoint(tbl, True)
 
 
@@ -307,6 +303,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.preset_filters.setSelectedItem(value)
         self.config_dict[feature] = value
         #self.preset_filters_config_value = value
+    f.close()
+    f = open('security_headers.txt','r')
+    self.total_security_headers = len(f.readlines())
+    f.close()
+    f = open('potentially_dangerous_headers.txt','r')
+    self.total_potential_headers = len(f.readlines())
+    f.close()
+    f = open('dangerous_headers.txt','r')
+    self.total_dangerous_headers = len(f.readlines())
     f.close()
 
   def update_config(self):#, feature, value):
@@ -364,6 +369,21 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return tip'''
 
+
+  def ColorScore(self, value, total, type):
+    """ Make a color more intense if more headers of that type are present"""
+    score = value * 255.0 / total
+    if type == "security":
+      return "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
+
+    elif type == "dangerous":
+      return "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
+
+    elif type == "potential":
+      R_factor = hex(int(int(0x4F) * score)).split('0x')[1]
+      G_factor = hex(int(int(0xC3) * score)).split('0x')[1]
+      B_factor = hex(int(int(0xF7) * score)).split('0x')[1]
+      return "#{0}{1}{2}".format(R_factor.zfill(2), G_factor.zfill(2), B_factor.zfill(2))
 
   def UpdateHeaders(self, event):
     from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension
@@ -432,13 +452,72 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return extra_symbol
 
 
+  def to_get_colors(self, url, host, from_click):
+    # get_colors == True -> just get how many symbols for categories there are. get_colors == False -> fill the summary
+    print('6666666666')
+    count_colors = {"dangerous":0, "security":0, "potential":0} #count how many of each categories are for a certain request/response pair. this is used in the unique endpoints table to add brighter or fainter color symbols
+    
+    print(count_colors)
+    if from_click:
+      val = url#val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+    #else:
+    #  val = tbl.getModel().getDataVector().elementAt(0)
+
+    print('999999999999999') 
+    for item in history1:
+      request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+      req_headers = request.split('\r\n')
+      endpoint = req_headers[0]
+
+      endpoint = self.apply_regex(endpoint)  
+
+      #print('################')
+      #print(endpoint)
+      #print(val)
+      #print('################')
+      if endpoint == val: # si coincide un endpoint del history con el que hemos seleccionado
+        
+        for req_head in req_headers[1:]: # este for encuentra el Host header
+          if 'Host: ' in req_head:
+            host = req_head.split(': ')[1]
+            break
+
+        if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. este if no es inutil?? bueno, creo que valdria si dos host distintos tienen un mismo endpoint
+
+          for req_head in sorted(req_headers[1:]): # este for encuentra el Host header
+
+              extra_symbol = self.extra_symbol(req_head)
+              if "[ + ]" in extra_symbol:
+                count_colors["security"] += 1
+              elif "[ X ]" in extra_symbol:
+                count_colors["dangerous"] += 1
+              elif "[ ? ]" in extra_symbol:
+                count_colors["potential"] += 1
+   
+          response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+          resp_headers = response.split('\r\n')
+          for resp_head in sorted(resp_headers[1:]):
+
+            extra_symbol = self.extra_symbol(resp_head)
+            if "[ + ]" in extra_symbol:
+              count_colors["security"] += 1
+            elif "[ X ]" in extra_symbol:
+              count_colors["dangerous"] += 1
+            elif "[ ? ]" in extra_symbol:
+              count_colors["potential"] += 1
+
+          break
+
+    return count_colors
+
   def clicked_endpoint(self, tbl, from_click):
     
-
+    
     if from_click:
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
     else:
       val = tbl.getModel().getDataVector().elementAt(0)
+
         
     for item in history1:
       request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
@@ -450,7 +529,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
       if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
         
-        
         for req_head in req_headers[1:]: # este for encuentra el Host header
           if 'Host: ' in req_head:
             host = req_head.split(': ')[1]
@@ -458,15 +536,17 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         clicked_header = self.selected_header
 
-        if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers
+        if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
           burp_extender_instance.header_summary.setText("")
           buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
           buffer += '<b>' + req_headers[0] + '</b>'
           buffer += '<ul padding-left=0>'
+          print(sorted(req_headers[1:]))
           for req_head in sorted(req_headers[1:]): # este for encuentra el Host header
 
               extra_symbol = self.extra_symbol(req_head)
 
+ 
               req_head = req_head.replace('<','< ')
               req_head_name = req_head.split(': ')[0]
               req_head_value = req_head.split(': ')[1]
@@ -481,7 +561,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
           buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
           buffer += '<h2><font color="orange">Response headers:</h2>' 
-          buffer += '<ul padding-left=0>'
+          buffer += '<ul padding-left=0; width="100px">'
 
           response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
@@ -493,6 +573,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             resp_head_name = resp_head.split(': ')[0]
             resp_head_value = resp_head.split(': ')[1]
 
+          
             if resp_head.split(":")[0] == clicked_header:
               buffer += '<li><b>' + '<font color="orange">' + resp_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + resp_head_value + "</b><br></li>"
             else:
@@ -724,15 +805,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     matches = self.query_params.findall(string_for_regex.split('HTTP/')[0])
     for match in matches:
       try:
-        #string_for_regex = string_for_regex.replace(match[1:], '<*>' + match[-1])
-        string_for_regex = string_for_regex.replace(match[1:], '<*>' + match[-1])
+        #string_for_regex = string_for_regex.replace(match[1:], '[*]' + match[-1])
+        string_for_regex = string_for_regex.replace(match[1:], '[*]' + match[-1])
       except:
         print('Error matching first regex when computing unique endpoints.')
     matches1 = self.number_between_forwardslash.findall(string_for_regex.split('HTTP/')[0])
     for match1 in matches1:
       try:
         #string_for_regex = string_for_regex.replace(match1[1:],  '<html><font color=orange>&lt;*&gt;</font></html>' )
-        string_for_regex = string_for_regex.replace(match1[1:],  '<*>' )
+        string_for_regex = string_for_regex.replace(match1[1:],  '[*]' )
       except:
         print('Error matching second regex when computing unique endpoints.')
     return string_for_regex
@@ -750,13 +831,29 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         
       if entry not in self.unique_entries:
         self.unique_entries.append(entry)
-        #entry[0] = '<html>' + entry[0].replace('<*>','<font color=orange>&lt;*&gt;</font>') + '</html>'
-        ##print(entry[0])
-        ##method = entry[0].split(' ')[0]
-        ##http_version = entry[0].split(' ')[-1]
-        ##url = ' '.join(entry[0].split(' ')[1:-1])
-        ##self.model_unique_endpoints.addRow([method, http_version, url])
-        self.model_unique_endpoints.addRow( [entry[0]])
+        ###################################
+        #coger el host del elemento clickado en la tabla de la izda
+        host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
+        colors = self.to_get_colors(entry[0], host, True)  #colors es un dict
+
+        symbols_color = {}
+        for color in colors.keys():
+          print('uu'+color)
+          
+          if color == "security":
+            total = self.total_security_headers
+          elif color == "potential":
+            total = self.total_potential_headers
+          elif color == "dangerous":
+            total = self.total_dangerous_headers
+          symbols_color[color] = self.ColorScore(colors[color], total, color)
+
+        symbols_string = '<html><font color="{0}">[+]</font><font color="{1}">[?]</font><font color="{2}">[X]</font> '.format(symbols_color["security"], symbols_color["potential"], symbols_color["dangerous"])
+        print(symbols_string +entry[0]+'</html>')
+
+        ###################################
+        self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
+        
 
     self.table_unique_endpoints.setRowSelectionInterval(0,0) 
     self.clicked_endpoint(self.table_unique_endpoints, False)
@@ -846,7 +943,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.preset_filters.addElement("Request + Response + <meta>")
     self.preset_filters.addElement("In scope only (se puede acceder al scope???)")
     self.preset_filters.addElement("Security headers only")
-    self.preset_filters.addElement("Security headers only")
+    self.preset_filters.addElement("Potentially dangerous headers only")
     self.preset_filters.addElement("Dangerous or unnecessary headers only")
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
