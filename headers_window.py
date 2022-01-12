@@ -352,7 +352,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return
     
-
   def getTabCaption(self):
     return "Headers"
 
@@ -369,21 +368,30 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return tip'''
 
+  '''def correct_base_color(self, color):
+    if color == "#000000":
+      color "#FFFFFF"
+    return color'''
+
 
   def ColorScore(self, value, total, type):
     """ Make a color more intense if more headers of that type are present"""
     score = value * 255.0 / total
     if type == "security":
-      return "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
+      color = "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
+      # if there are no headers of this type show the symbol as brown, looks better
+      return color.replace("#000000", "#707070")
 
     elif type == "dangerous":
-      return "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
+      color = "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
+      return color.replace("#000000", "#707070")
 
     elif type == "potential":
       R_factor = hex(int(int(0x4F) * score)).split('0x')[1]
       G_factor = hex(int(int(0xC3) * score)).split('0x')[1]
       B_factor = hex(int(int(0xF7) * score)).split('0x')[1]
-      return "#{0}{1}{2}".format(R_factor.zfill(2), G_factor.zfill(2), B_factor.zfill(2))
+      color = "#{0}{1}{2}".format(R_factor.zfill(2), G_factor.zfill(2), B_factor.zfill(2))
+      return color.replace("#000000", "#707070")
 
   def UpdateHeaders(self, event):
     from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension
@@ -437,8 +445,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     return
 
-  # ARREGLAR NOMBRES DE VARIABLES
-
   def extra_symbol(self, head):
 
     if head.split(": ")[0].lower() in security_headers:
@@ -451,19 +457,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       extra_symbol = ""
     return extra_symbol
 
-
   def to_get_colors(self, url, host, from_click):
     # get_colors == True -> just get how many symbols for categories there are. get_colors == False -> fill the summary
-    print('6666666666')
     count_colors = {"dangerous":0, "security":0, "potential":0} #count how many of each categories are for a certain request/response pair. this is used in the unique endpoints table to add brighter or fainter color symbols
     
-    print(count_colors)
     if from_click:
       val = url#val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
     #else:
     #  val = tbl.getModel().getDataVector().elementAt(0)
 
-    print('999999999999999') 
     for item in history1:
       request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
@@ -510,6 +512,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     return count_colors
 
+  def replace_symbol(self, replace_here):
+    # it's important that the new symbol has spaces, some endpoints are so goddamn long that without spaces they don't fit and are completely hidden
+    replace_here = replace_here.replace('[*]','<font color="orange">[ * ]</font>') 
+    return replace_here
+
   def clicked_endpoint(self, tbl, from_click):
     
     
@@ -527,7 +534,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
       endpoint = self.apply_regex(endpoint)  
 
-      if endpoint == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
+      #print('~~~~~~~~~~')
+      #print(endpoint)
+      #print(val[0])
+      #print('~~~~~~~~~~')
+      #if endpoint.replace('[*]','(+)') == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
+      if self.replace_symbol(endpoint) == val[0].split(' - ')[1].strip('<html>').strip('</html>'): # si coincide un endpoint del history con el que hemos seleccionado
         
         for req_head in req_headers[1:]: # este for encuentra el Host header
           if 'Host: ' in req_head:
@@ -561,7 +573,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
           buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
           buffer += '<h2><font color="orange">Response headers:</h2>' 
-          buffer += '<ul padding-left=0; width="100px">'
+          buffer += '<ul padding-left=0; width="10px">'
 
           response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
@@ -593,7 +605,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           self.header_summary.setSelectionEnd(0)
           break
 
-
   def choose_output_file(self, event):
       fc = JFileChooser()
       result = fc.showOpenDialog( None )
@@ -602,7 +613,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         print(str(fc.getSelectedFile()))
 
       return
-
 
   def save_json(self,event):
     out_type = self.save_ComboBox.getSelectedItem()
@@ -824,7 +834,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.unique_entries = []
 
     for entry in endpoint_table:
-      self.model_all_endpoints.addRow(entry)
+      self.model_all_endpoints.addRow([' - ' + entry[0], entry[1:]])
 
     for entry in endpoint_table:
       entry[0] = self.apply_regex(entry[0])
@@ -838,7 +848,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         symbols_color = {}
         for color in colors.keys():
-          print('uu'+color)
+          #print('uu'+color)
           
           if color == "security":
             total = self.total_security_headers
@@ -848,24 +858,28 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             total = self.total_dangerous_headers
           symbols_color[color] = self.ColorScore(colors[color], total, color)
 
-        symbols_string = '<html><font color="{0}">[+]</font><font color="{1}">[?]</font><font color="{2}">[X]</font> '.format(symbols_color["security"], symbols_color["potential"], symbols_color["dangerous"])
-        print(symbols_string +entry[0]+'</html>')
+        symbols_string = '<b><font color="{0}">[{1}+]</font><font color="{2}">[{3}?]</font><font color="{4}">[{5}X]</font></b> - '.format(symbols_color["security"], colors["security"], symbols_color["potential"], colors["potential"], symbols_color["dangerous"], colors["dangerous"])
+        #symbols_string = '<b><font color="{0}">[+]</font><font color="{1}">[?]</font><font color="{2}">[X]</font></b> - '.format(symbols_color["security"], symbols_color["potential"], symbols_color["dangerous"])
+        #print(symbols_string +entry[0]+'</html>')
 
         ###################################
-        self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
+        #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
+        print('<html>' + entry[0].replace('[*]', '<font color=orange>[*]</font>') + '</html>')
+        self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
+        #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color=orange>[*]</font>') + '</html>'])
+        #self.model_unique_endpoints.addRow( [ entry[0] ])
         
 
     self.table_unique_endpoints.setRowSelectionInterval(0,0) 
     self.clicked_endpoint(self.table_unique_endpoints, False)
     return
 
-
   def addRB( self, pane, bg, text ) :
       bg.add(pane.add(JRadioButton(text,itemStateChanged = self.toggle)))
       return
 
-
   def toggle( self, event ) :
+    """ test help"""
     text = event.getItem().getText()
     if text == "Security headers":
       self.file_to_add_headers = "security_headers.txt"
@@ -875,7 +889,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.file_to_add_headers = "dangerous_headers.txt"
     return
 
-
   def add_header_to_file(self, event):
     filename = self.file_to_add_headers
     text = self.header_to_add.getText()
@@ -883,7 +896,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f.write("\n" + text)
     f.close()
     self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
-
 
   def add_headers_to_categories(self, event):
     self.file_to_add_headers = ""
@@ -921,7 +933,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return
     
-
   def getUiComponent(self):
     panel = JPanel(GridBagLayout())
     
@@ -1031,9 +1042,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     ##self.model_unique_endpoints = IssueTableModel([[""]], ["HTTP method","HTTP version", "URL"])
     self.model_unique_endpoints = IssueTableModel([[""]], ["Unique endpoints for selected host"])
-
-
-
     self.table_unique_endpoints = IssueTable(self.model_unique_endpoints, "endpoints")
 
     self.model_all_endpoints = IssueTableModel([[""]], ["All endpoints for selected host"])
@@ -1059,18 +1067,18 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.summary_panel = JPanel()
     self.summary_panel.setLayout(BoxLayout(self.summary_panel,BoxLayout.Y_AXIS))
-    self.summary_panel.add(self.checkbox_panel)
+    ###self.summary_panel.add(self.checkbox_panel) """  !!!!!!!!!!11 este impedia resizear !!!!!!!!!!! """
     self.summary_panel.add(self.summary_summary)
 
     self.splt_3 = JSplitPane(JSplitPane.VERTICAL_SPLIT, self.scroll_summary, self.summary_panel)
     self.splt_3.setDividerLocation(550)
 
-    splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.endpoint_tabs), self.splt_3)#self.scroll_summary)
-    splt_2.setDividerLocation(300)
+    self.splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.splt_3)#self.scroll_summary)
+    #self.splt_2.setDividerLocation(300)
 
-    splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), splt_2) 
-    splt_1.setDividerLocation(500)
-    panel.add(splt_1, c)
+    self.splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), self.splt_2) 
+    #self.splt_1.setDividerLocation(500)
+    panel.add(self.splt_1, c)
 
     # ================== Add saving to file ===================== #
     JPanel2 = JPanel(GridBagLayout())
@@ -1135,7 +1143,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     return panel
 
-
   def clear_table(self):
     
     self.model_tab_req.setRowCount(0)
@@ -1150,7 +1157,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.last_row = 0
     self.last_len = 0
     return
-
 
   def filter_entries(self, event):
     self.clear_table()
@@ -1262,13 +1268,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.update_config()
     return
 
-
   def createMenuItems(self, context_menu):
     self.context = context_menu
     menu_list = ArrayList()
     menu_list.add(JMenuItem("Headers", actionPerformed=self.show_window))
     return menu_list
-
 
   def pullRequest(self, event):
     final_text = self.new_header_name.getText() + "&&" + \
@@ -1279,7 +1283,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.to_submit_text.setLineWrap(True)
     self.to_submit_text.setText(final_text)
     return
-
 
   def show_window(self, event):
 
