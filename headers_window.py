@@ -137,9 +137,7 @@ resp_headers_description.close()
 
 
 class IssueTableModel(DefaultTableModel):
-    """Extends the DefaultTableModel to make it readonly (among other
-    things)."""
-
+    """Extends the DefaultTableModel to make it readonly."""
     def __init__(self, data, headings):
         # call the DefaultTableModel constructor to populate the table
         DefaultTableModel.__init__(self, data, headings)
@@ -151,6 +149,7 @@ class IssueTableModel(DefaultTableModel):
 
 
 class IssueTableMouseListener(MouseListener):
+  """Some necessary entries that must be present on all mouse listeners, so this is a parent class that is inherited by the other specific mouse listener clases below."""
 
   def getClickedIndex(self, event):
     """Returns the value of the first column of the table row that was
@@ -184,6 +183,7 @@ class IssueTableMouseListener(MouseListener):
 
 
 class IssueTableMouseListener_Window(IssueTableMouseListener):
+    """Adds values to the extra information panel when an entry in the floating window is double clicked. The extra info panel is always there, double clicking elements of the floating window only makes it visible."""
     def mouseClicked(self, event):
         if event.getClickCount() == 1:  # single click on table elements
             header = self.getClickedRow(event)[0]
@@ -210,7 +210,7 @@ class IssueTableMouseListener_Window(IssueTableMouseListener):
 
 
 class IssueTableMouseListener_Tab(IssueTableMouseListener):
-
+    """Adds functionality to the Header-host table when its elements are clicked."""
     def mouseClicked(self, event):
         if event.getClickCount() == 1:
             
@@ -245,7 +245,7 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
         
 
 class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
-
+    """Adds functionality to the click actions on rows of the "Unique endpoints" and "All endpoints" tables."""
     def extra_symbol(self, head):
 
       if head.split(": ")[0].lower() in security_headers:
@@ -268,7 +268,7 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
 
 class IssueTable(JTable):
-
+    """Table class for the tables used in the extension. Needed to give the capacity to tables to perform actions when their rows are clicked."""
     def __init__(self, model, table_type):
         self.setModel(model)
         self.getTableHeader().setReorderingAllowed(False)
@@ -281,11 +281,13 @@ class IssueTable(JTable):
 
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
+  """Main class of the Headers extension, instantiated by Burp."""
   def __init__(self):
     self.selected_host = ""
     self.selected_header = ""
 
   def apply_config(self):
+    """Read the configuration file and load the configurations. It is run when the extension loads."""
     print("Applying config...")
     f = open("config.txt","r")
     for line in f.readlines():
@@ -315,12 +317,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f.close()
 
   def update_config(self):#, feature, value):
+    """Update the configuration file with values supplied in the configuration panel of the extension"""
     f = open("config.txt", "w")
     for key in list(self.config_dict.keys()):
       f.write(key + " -- " + self.config_dict[key] + "\n")  #comprobar 
     f.close()
 
   def compile_regex(self):
+    """Compile regular expressions that will be used later by the extension to match URL parameters"""
     #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
     self.query_params = re.compile('=.*?&|=.*? ') 
 
@@ -328,6 +332,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
 
   def registerExtenderCallbacks(self, callbacks):
+    """Import Burp Extender callbacks and execute some preliminary functions for setting up the extension when it's loaded with proper configurations"""
     self._callbacks = callbacks
     self._helpers = callbacks.helpers
     callbacks.setExtensionName("Headers")
@@ -353,6 +358,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
     
   def getTabCaption(self):
+    """Name that will be shown in the extension's tab in the Burp interface"""
     return "Headers"
 
   '''def getToolTipText(self, event):
@@ -368,14 +374,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return tip'''
 
-  '''def correct_base_color(self, color):
-    if color == "#000000":
-      color "#FFFFFF"
-    return color'''
-
-
   def ColorScore(self, value, total, type):
-    """ Make a color more intense if more headers of that type are present"""
+    """ Make a color more intense if more headers of that type are present. To be used in the unique endpoints table."""
     score = value * 255.0 / total
     if type == "security":
       color = "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
@@ -394,6 +394,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       return color.replace("#000000", "#707070")
 
   def UpdateHeaders(self, event):
+    """Get the latest version of the request and response headers file from the Github repo. The urllib2 takes some seconds to load, so it's only loaded if this function is ever called, to improve performance."""
     from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension
     print("Backing up old header files...")
     try:
@@ -446,7 +447,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def extra_symbol(self, head):
-
+    """Creates the extra symbols for security [+], dangerous [X] and potentially dangrous [?] headers that are shown in the request header summary at the right side of the screen."""
     if head.split(": ")[0].lower() in security_headers:
       extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
     elif head.split(": ")[0].lower() in dangerous_headers:
@@ -458,6 +459,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return extra_symbol
 
   def to_get_colors(self, url, host, from_click):
+    """Get the count of each symbol for the unique endpoints table. That number will be transformed into color strings by the self.ColorScore function"""
     # get_colors == True -> just get how many symbols for categories there are. get_colors == False -> fill the summary
     count_colors = {"dangerous":0, "security":0, "potential":0} #count how many of each categories are for a certain request/response pair. this is used in the unique endpoints table to add brighter or fainter color symbols
     
@@ -473,10 +475,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
       endpoint = self.apply_regex(endpoint)  
 
-      #print('################')
-      #print(endpoint)
-      #print(val)
-      #print('################')
       if endpoint == val: # si coincide un endpoint del history con el que hemos seleccionado
         
         for req_head in req_headers[1:]: # este for encuentra el Host header
@@ -513,12 +511,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return count_colors
 
   def replace_symbol(self, replace_here):
+    """Replace the wildcard symbol with an html formatted one for colors. Implemented as a separate function becaused it is called several times, to avoid code duplication."""
     # it's important that the new symbol has spaces, some endpoints are so goddamn long that without spaces they don't fit and are completely hidden
     replace_here = replace_here.replace('[*]','<font color="orange">[ * ]</font>') 
     return replace_here
 
-  def clicked_endpoint(self, tbl, from_click):
-    
+  def clicked_endpoint(self, tbl, from_click):#, from_unique):
+    """Fill the summary (panel at the right side of the extension tab) when an endpoint (either from the "Unique endpoints" table or from the "All endpoints table") is clicked. The summary contains the request and response headers, marked with symbols if they are security headers, dangerous headers, or potentially dangerous headers."""
     
     if from_click:
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
@@ -532,15 +531,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       endpoint = req_headers[0]
       buffer = ""
 
-      endpoint = self.apply_regex(endpoint)  
-
-      #print('~~~~~~~~~~')
-      #print(endpoint)
-      #print(val[0])
-      #print('~~~~~~~~~~')
-      #if endpoint.replace('[*]','(+)') == val[0]: # si coincide un endpoint del history con el que hemos seleccionado
-      if self.replace_symbol(endpoint) == val[0].split(' - ')[1].strip('<html>').strip('</html>'): # si coincide un endpoint del history con el que hemos seleccionado
+      # the next two ifs are for matching to elements in the history if we choose from the unique endpoints or from all endpoints, must be processed differently for the comparison
+      if tbl.getModel() == self.model_unique_endpoints:
+        match = self.replace_symbol(self.apply_regex(endpoint)) == val[0].split(' - ')[1].strip('<html>').strip('</html>') # si coincide un endpoint del history con el que hemos seleccionado
         
+      if tbl.getModel() == self.model_all_endpoints:
+        match = endpoint == val[0].strip('<html>').strip('</html>')
+
+
+      if match:
         for req_head in req_headers[1:]: # este for encuentra el Host header
           if 'Host: ' in req_head:
             host = req_head.split(': ')[1]
@@ -557,7 +556,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           for req_head in sorted(req_headers[1:]): # este for encuentra el Host header
 
               extra_symbol = self.extra_symbol(req_head)
-
  
               req_head = req_head.replace('<','< ')
               req_head_name = req_head.split(': ')[0]
@@ -606,15 +604,17 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           break
 
   def choose_output_file(self, event):
-      fc = JFileChooser()
-      result = fc.showOpenDialog( None )
-      if result == JFileChooser.APPROVE_OPTION :
-        self.save_path.setText(str(fc.getSelectedFile()))
-        print(str(fc.getSelectedFile()))
+    """File dialogue to choose the path where the output file will be written"""
+    fc = JFileChooser()
+    result = fc.showOpenDialog( None )
+    if result == JFileChooser.APPROVE_OPTION :
+      self.save_path.setText(str(fc.getSelectedFile()))
+      #print(str(fc.getSelectedFile()))
 
-      return
+    return
 
   def save_json(self,event):
+    """Save data to an output file, either in JSON format or in plain text. Multiple output formats are available."""
     out_type = self.save_ComboBox.getSelectedItem()
     out_file_name = self.save_path.getText()
     
@@ -806,6 +806,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
   
   def apply_regex(self, string_for_regex):
+    """Applies regular expressions to URLs in order to replace query string parameters values with wildcards. This is used later to remove redundant endpoints in the "Unique endpoints" table, and keep only the unique ones."""
     #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
     #query_params = re.compile('=.*?&|=.*? ') 
 
@@ -815,33 +816,31 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     matches = self.query_params.findall(string_for_regex.split('HTTP/')[0])
     for match in matches:
       try:
-        #string_for_regex = string_for_regex.replace(match[1:], '[*]' + match[-1])
         string_for_regex = string_for_regex.replace(match[1:], '[*]' + match[-1])
       except:
         print('Error matching first regex when computing unique endpoints.')
     matches1 = self.number_between_forwardslash.findall(string_for_regex.split('HTTP/')[0])
     for match1 in matches1:
       try:
-        #string_for_regex = string_for_regex.replace(match1[1:],  '<html><font color=orange>&lt;*&gt;</font></html>' )
         string_for_regex = string_for_regex.replace(match1[1:],  '[*]' )
       except:
         print('Error matching second regex when computing unique endpoints.')
     return string_for_regex
 
   def update_endpoints(self, endpoint_table):
+    """Update the "Unique endpoints" table and the "All endpoints" table when a row in the Header-Host table (at the left side of the extension tab) is clicked. The endpoint tables show all the endpoints that exist in the Burp history for which the Host request header is the one clicked on the Header-Host table."""
     self.model_unique_endpoints.setRowCount(0)
     self.model_all_endpoints.setRowCount(0)
     self.unique_entries = []
 
     for entry in endpoint_table:
-      self.model_all_endpoints.addRow([' - ' + entry[0], entry[1:]])
+      self.model_all_endpoints.addRow(entry)
 
     for entry in endpoint_table:
       entry[0] = self.apply_regex(entry[0])
         
       if entry not in self.unique_entries:
         self.unique_entries.append(entry)
-        ###################################
         #coger el host del elemento clickado en la tabla de la izda
         host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
         colors = self.to_get_colors(entry[0], host, True)  #colors es un dict
@@ -874,12 +873,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.clicked_endpoint(self.table_unique_endpoints, False)
     return
 
-  def addRB( self, pane, bg, text ) :
-      bg.add(pane.add(JRadioButton(text,itemStateChanged = self.toggle)))
-      return
+  def addRB( self, pane, bg, text ):
+    """Add radio buttons"""
+    bg.add(pane.add(JRadioButton(text,itemStateChanged = self.toggle)))
+    return
 
   def toggle( self, event ) :
-    """ test help"""
+    """Sets the file to which the user will add new headers of a certain category. If these headers are found in requests or responses in the history, the appropriate symbols will be applied to them in the "Unique endpoints" table and in the Summary."""
     text = event.getItem().getText()
     if text == "Security headers":
       self.file_to_add_headers = "security_headers.txt"
@@ -890,6 +890,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def add_header_to_file(self, event):
+    """Adds a new header supplied by the user to the corresponding category (security, dangerous, potentially dangerous)."""
     filename = self.file_to_add_headers
     text = self.header_to_add.getText()
     f = open(filename,"a")
@@ -898,6 +899,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
 
   def add_headers_to_categories(self, event):
+    """Configuration panel which the user can use to add new headers to category files."""
     self.file_to_add_headers = ""
     add_headers = JFrame("Add new header to categories")
     add_headers_panel = JPanel()
@@ -934,6 +936,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
     
   def getUiComponent(self):
+    """Builds the interface of the extension tab."""
     panel = JPanel(GridBagLayout())
     
     # ================== Add button and filter ===================== #
@@ -973,17 +976,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.filter.addActionListener(self.filter_entries)
     JPanel1.add(self.filter , c )
 
-
-    
     c = GridBagConstraints()
     y_pos =0
     c.gridy = y_pos 
     c.fill = GridBagConstraints.HORIZONTAL
     c.anchor = GridBagConstraints.WEST
     panel.add( JPanel1 , c)
-
-  
-   
 
     # ================== Add empty label ===================== #
 
@@ -1025,6 +1023,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.table_tab_meta.getColumnModel().getColumn(0).setPreferredWidth(100)
     self.table_tab_meta.getColumnModel().getColumn(1).setPreferredWidth(100)
+
+
     # IMPORTANT: tables must be inside a JScrollPane so that the Table headers (that is, the columns names) are visible!!!
     panelTab_req = JPanel(BorderLayout()) 
     panelTab_req.add(JScrollPane(self.table_tab_req))
@@ -1033,10 +1033,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     panelTab_meta = JPanel(BorderLayout()) 
     panelTab_meta.add(JScrollPane(self.table_tab_meta))
 
+
     self.tab_tabs = JTabbedPane() 
     self.tab_tabs.addTab('Requests', panelTab_req)
     self.tab_tabs.addTab('Responses', panelTab_resp)
     self.tab_tabs.addTab('<meta>', panelTab_meta)
+
 
     # ================== Add endpoints table ===================== #
 
@@ -1144,7 +1146,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return panel
 
   def clear_table(self):
-    
+    """Clears the Header-Host table. It is also called every time a filter is applied."""
     self.model_tab_req.setRowCount(0)
     self.model_tab_resp.setRowCount(0)
     self.for_table = []
@@ -1159,6 +1161,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def filter_entries(self, event):
+    """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
     self.clear_table()
     
     global history1
@@ -1269,12 +1272,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def createMenuItems(self, context_menu):
+    """Adds an entry to Burp's context menu, when it is clicked the floating window with headers information of the selected item(s) in Burp history is shown"""
     self.context = context_menu
     menu_list = ArrayList()
     menu_list.add(JMenuItem("Headers", actionPerformed=self.show_window))
     return menu_list
 
   def pullRequest(self, event):
+    """Creates the string to be submitted for contributing with new headers information"""
     final_text = self.new_header_name.getText() + "&&" + \
     self.new_header_description.getText() + "&&" + \
     self.new_header_example.getText() + "&&" + \
@@ -1285,7 +1290,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def show_window(self, event):
-
+    """Creates the floating window with the information about the headers present in the selected items of Burp's history"""
     # ----------------------------------------- crear diccionarios ---------------------------------------------#
     dict_req_headers = {}
     req_headers_description = open('request_headers.txt','r')
