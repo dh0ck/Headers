@@ -47,6 +47,7 @@ extra_info.toFront()
 extra_info.setAlwaysOnTop(True)
 
 extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
+#extra_info_label1 = JLabel("<html><b><font color='{}'>Header Name:</font></b></html>".format(self.color1))
 extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
 extra_info_textarea1.setLineWrap(True)
@@ -54,6 +55,7 @@ scrollPane_1 = JScrollPane(extra_info_textarea1)
 scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
+#extra_info_label2 = JLabel("<html><b><font color='{}'>Header Description:</font></b></html>".format(self.color1))
 extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
 extra_info_textarea2.setLineWrap(True)
@@ -61,6 +63,7 @@ scrollPane_2 = JScrollPane(extra_info_textarea2)
 scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
+#extra_info_label3 = JLabel("<html><b><font color='{}'>Usage example:</font></b></html>".format(self.color1))
 extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
 extra_info_textarea3.setLineWrap(True)
@@ -68,6 +71,7 @@ scrollPane_3 = JScrollPane(extra_info_textarea3)
 scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
+#extra_info_label4 = JLabel("<html><b><font color='{}'>URL describing header:</font></b></html>".format(self.color1))
 extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
 extra_info_textarea4.setLineWrap(True)
@@ -75,6 +79,7 @@ scrollPane_4 = JScrollPane(extra_info_textarea4)
 scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
 extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
+#extra_info_label5 = JLabel("<html><b><font color='{}'>Potential risks associated with header:</font></b></html>".format(self.color1))
 extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
 extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
 extra_info_textarea5.setLineWrap(True)
@@ -188,7 +193,7 @@ class IssueTableMouseListener_Window(IssueTableMouseListener):
         if event.getClickCount() == 1:  # single click on table elements
             header = self.getClickedRow(event)[0]
 
-            header = header[0].split('<font color="orange">')[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
+            header = header[0].split('<font color="{}">'.format(self.color1))[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
             extra_info_textarea1.setText(header)
             if header in list(dict_req_headers.keys()) and header not in list(dict_resp_headers.keys()):
               extra_info_textarea2.setText(dict_req_headers[header][0])
@@ -224,7 +229,7 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
               while header == '':
                 k -= 1
                 header = tbl.getModel().getDataVector().elementAt(k)[0]
-        header_value = header.split('<font color="orange">')[1].split('</font>')[0]
+        header_value = header.split('<font color="{}">'.format(burp_extender_instance.color1))[1].split('</font>')[0]
         #hasta aqui ok, header_value es el header que se ha marcado (primera columna), creo que este solo lo uso para subrayado en el textarea
 
         global host_endpoint
@@ -305,6 +310,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.preset_filters.setSelectedItem(value)
         self.config_dict[feature] = value
         #self.preset_filters_config_value = value
+      elif feature == "UI_theme":
+        self.UI_theme = value
     f.close()
     f = open('security_headers.txt','r')
     self.total_security_headers = len(f.readlines())
@@ -314,6 +321,26 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f.close()
     f = open('dangerous_headers.txt','r')
     self.total_dangerous_headers = len(f.readlines())
+    f.close()
+
+    # UI colors
+    if self.UI_theme == "dark":
+      f = open('UI_theme_dark.txt', 'r')
+    elif self.UI_theme == "light":
+      f = open('UI_theme_light.txt', 'r')
+    for k, line in enumerate(f.readlines()):
+      if k == 0:
+        self.color1 = line.strip('\n')  # for titles and dashed lines
+      elif k == 1:
+        self.color2 = line.strip('\n') # for security headers
+      elif k == 2:
+        self.color3 = line.strip('\n')  # for potentially dangerous headers
+      elif k == 3:
+        self.color4 = line.strip('\n')  # for dangerous or verbose headers
+      elif k == 4:
+        self.color5 = line.strip('\n')  # for the rest of headers
+      elif k == 5:
+        self.color6 = line.strip('\n')  # for the wildcards in the unique endpoints URL
     f.close()
 
   def update_config(self):#, feature, value):
@@ -330,6 +357,26 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo
     self.number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
+
+  def find_host(self, req_headers):  
+    for req_head in req_headers[1:]:
+      if 'Host: ' in req_head:
+        host = req_head.split(': ')[1]
+        break
+    return host
+
+  def create_advanced_config_frame(self):
+    self.advanced_config_panel = JFrame("Advanced configuration")
+    self.advanced_config_panel.toFront()
+    self.advanced_config_panel.setAlwaysOnTop(True)
+    self.advanced_config_panel.setLayout(FlowLayout())
+    self.advanced_config_panel.setSize(260, 400)
+    self.advanced_config_panel.setLocationRelativeTo(None)    
+    return
+
+  
+  def show_advanced_config(self, event):
+    self.advanced_config_panel.setVisible(True)
 
   def registerExtenderCallbacks(self, callbacks):
     """Import Burp Extender callbacks and execute some preliminary functions for setting up the extension when it's loaded with proper configurations"""
@@ -354,6 +401,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.config_dict = {}
     self.apply_config()
     self.compile_regex()
+    self.create_advanced_config_frame()
     
     return
     
@@ -477,10 +525,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
       if endpoint == val: # si coincide un endpoint del history con el que hemos seleccionado
         
-        for req_head in req_headers[1:]: # este for encuentra el Host header
-          if 'Host: ' in req_head:
-            host = req_head.split(': ')[1]
-            break
+        host = self.find_host(req_headers)
 
         if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. este if no es inutil?? bueno, creo que valdria si dos host distintos tienen un mismo endpoint
 
@@ -513,7 +558,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def replace_symbol(self, replace_here):
     """Replace the wildcard symbol with an html formatted one for colors. Implemented as a separate function becaused it is called several times, to avoid code duplication."""
     # it's important that the new symbol has spaces, some endpoints are so goddamn long that without spaces they don't fit and are completely hidden
-    replace_here = replace_here.replace('[*]','<font color="orange">[ * ]</font>') 
+    replace_here = replace_here.replace('[*]','<font color="{}"><b> * </b></font>'.format(self.color6)) 
+    #replace_here = replace_here.replace('[*]','<font color="{}">[ * ]</font>'.format(self.color6)) 
     return replace_here
 
   def clicked_endpoint(self, tbl, from_click):#, from_unique):
@@ -523,6 +569,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
     else:
       val = tbl.getModel().getDataVector().elementAt(0)
+      tbl.setRowSelectionInterval(0, 0)
 
         
     for item in history1:
@@ -540,16 +587,17 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
       if match:
-        for req_head in req_headers[1:]: # este for encuentra el Host header
+        host = self.find_host(req_headers)
+        '''for req_head in req_headers[1:]: # este for encuentra el Host header
           if 'Host: ' in req_head:
             host = req_head.split(': ')[1]
-            break
+            break'''
 
         clicked_header = self.selected_header
 
         if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
           burp_extender_instance.header_summary.setText("")
-          buffer += '<html><h2><font color="orange">Request headers:</h2>' + "\n"
+          buffer += '<html><h2><font color="{}">Request headers:</h2>'.format(self.color1) + "\n"
           buffer += '<b>' + req_headers[0] + '</b>'
           buffer += '<ul padding-left=0>'
           print(sorted(req_headers[1:]))
@@ -562,7 +610,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               req_head_value = req_head.split(': ')[1]
 
               if req_head.split(": ")[0] != "Host" and req_head.split(": ")[0] == clicked_header:
-                buffer += '<li><b>' + '<font color="orange">' + req_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + req_head_value + "</b><br></li>"
+                buffer += '<li><b>' + '<font color="{}">'.format(self.color1) + req_head_name + "</font>" + extra_symbol + '<font color="{}">: </font>'.format(self.color1) + req_head_value + "</b><br></li>"
 
               elif req_head.split(": ")[0] == "Host":
                 buffer += '<li><b>' + extra_symbol + '<font color="white">' + req_head + "</font></b><br></li>"
@@ -570,7 +618,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                 buffer += '<li><b>' + req_head_name + extra_symbol + ":</b> " + req_head_value + "<br></li>"
 
           buffer += "</ul><br>" * 2 + "<hr>" + "<br>" 
-          buffer += '<h2><font color="orange">Response headers:</h2>' 
+          buffer += '<h2><font color="{}">Response headers:</h2>'.format(self.color1)
           buffer += '<ul padding-left=0; width="10px">'
 
           response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
@@ -585,7 +633,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
           
             if resp_head.split(":")[0] == clicked_header:
-              buffer += '<li><b>' + '<font color="orange">' + resp_head_name + "</font>" + extra_symbol + '<font color="orange">: </font>' + resp_head_value + "</b><br></li>"
+              buffer += '<li><b>' + '<font color="{}">'.format(self.color1) + resp_head_name + "</font>" + extra_symbol + '<font color="{}">: </font>'.format(self.color1) + resp_head_value + "</b><br></li>"
             else:
               buffer += '<li><b>' + resp_head_name + extra_symbol + ":</b> " + resp_head_value + "<br></li>"
 
@@ -847,7 +895,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         symbols_color = {}
         for color in colors.keys():
-          #print('uu'+color)
           
           if color == "security":
             total = self.total_security_headers
@@ -863,9 +910,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         ###################################
         #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
-        print('<html>' + entry[0].replace('[*]', '<font color=orange>[*]</font>') + '</html>')
+        print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
         self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
-        #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color=orange>[*]</font>') + '</html>'])
+        #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
         #self.model_unique_endpoints.addRow( [ entry[0] ])
         
 
@@ -975,6 +1022,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.filter = JTextField('Or enter keywords (separated by a comma)')
     self.filter.addActionListener(self.filter_entries)
     JPanel1.add(self.filter , c )
+
+    c = GridBagConstraints()
+    c.fill = GridBagConstraints.HORIZONTAL
+    c.weightx = 1
+    c.gridx = 3 
+    c.gridy = y_pos
+    self.advanced_config_button = JButton('Advanced')
+    self.advanced_config_button.addActionListener(self.show_advanced_config)
+    JPanel1.add(self.advanced_config_button, c)
 
     c = GridBagConstraints()
     y_pos =0
@@ -1172,10 +1228,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       req_headers = request.split('\r\n')
       
       # -------- find the host for every request --------#
-      for req_head in req_headers[1:]:
-        if 'Host: ' in req_head:
-          host = req_head.split(': ')[1]
-          break
+      host = self.find_host(req_headers)
       
       if (host, req_headers[0]) not in host_endpoint: #si encuentro el index del history meterlo en la siguiente linea
         host_endpoint.append((host, req_headers[0]))
@@ -1239,7 +1292,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             if keyword.strip() in host.lower() or keyword in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
               if [key, host] not in self.for_table:
                 if k1 == 0 and key not in self.headers_already_in_table:
-                  self.for_table.append(['<html><b><font color="orange">' + key + '</font></b></html>', host])
+                  self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host])
                   added_something = True
                   self.header_host_table.append([key, key, host])
                   if key not in self.headers_already_in_table:
@@ -1255,7 +1308,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         # if some line was added to the header - host table, add a dashed line at the end. If not, don't add it
         if added_something:
-          self.for_table.append(['<html><b><font color="orange">' + '-' * 300 + '</font></b></html>', '<html><b><font color="orange">' + '-' * 300 + '</font></b></html>' * 300])
+          self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>', '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])
 
       # enter only new rows in for_table, dont reload all the table every time (probably there should be something to check if some entries were deleted form history. create a variable that counts up to 5 every time the button is clicked and then compares the history with the stored history, to check for missing entries that should be removed from the history1 variable or from self.for_table?)
       for table_entry in self.for_table[self.last_len:]:
@@ -1323,10 +1376,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       req_headers = request.split('\r\n')
       
       # -------- find the host for every request --------#
-      for req_head in req_headers[1:]:
-        if 'Host: ' in req_head:
-          host = req_head.split(': ')[1]
-          break
+      host = self.find_host(req_headers)
       
       # -------------------- requests -------------------#
       for req_head in req_headers[1:]:
@@ -1336,7 +1386,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         except:
           description = " --- Description unavailable --- "
         if req_head_name not in self.aux_names_req:
-          self.tableDataReq.append(['<html><b><font color="orange">'+ req_head_name + '</b></font></html>', description, host])
+          self.tableDataReq.append(['<html><b><font color="{}">'.format(self.color1) + req_head_name + '</b></font></html>', description, host])
         self.aux_names_req.append(req_head_name)
     
       # ----------------- responses ---------------#
@@ -1349,7 +1399,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         except:
           description = " --- Description unavailable --- "
         if resp_head_name not in self.aux_names_resp:
-          self.tableDataResp.append(['<html><b><font color="orange">'+ resp_head_name + '</b></font></html>', description, host])
+          self.tableDataResp.append(['<html><b><font color="{}">'.format(self.color1) + resp_head_name + '</b></font></html>', description, host])
         self.aux_names_resp.append(resp_head_name)
 
     self.tableDataReq.sort()      
