@@ -358,6 +358,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     # matchea numeros en la url tipo /asdf/1234/qwe/1234, matchearia los dos 1234 y secuencias de letras, numeros y guiones o puntos. igual algun caso raro se cuela, pero por lo que he visto pilla todo
     self.number_between_forwardslash = re.compile('\/[a-zA-Z]*\d+[a-zA-Z0-9-_\.]*')
 
+    # match de <meta> headers
+    self.meta = re.compile('<meta .*?>')
+
   def find_host(self, req_headers):  
     for req_head in req_headers[1:]:
       if 'Host: ' in req_head:
@@ -374,7 +377,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.advanced_config_panel.setLocationRelativeTo(None)    
     return
 
-  
   def show_advanced_config(self, event):
     self.advanced_config_panel.setVisible(True)
 
@@ -387,13 +389,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     callbacks.addSuiteTab(self)
     self.req_header_dict = {}
     self.resp_header_dict = {}
-    self.for_table = []
-    self.header_host_table = []
+    self.for_table = [] # Items in this table will be shown in the Header-Host table (left side of the screen) for Requests and Responses headers
+    self.header_host_table = [] # This holds data in three columns with Headers, Unique headers and Hosts and it's used for saving data to a file
     self.for_req_table = []
     self.for_resp_table = []
     self.headers_already_in_table = []
     self.last_len = 0
+    self.last_len_meta = 0
     self.last_row = 0
+    self.last_row_meta = 0
     ### global history1 # variable global con el history de requests
     history1 = self._callbacks.getProxyHistory()
     global burp_extender_instance
@@ -1025,11 +1029,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
-    c.weightx = 1
+    c.weightx = 0
     c.gridx = 3 
     c.gridy = y_pos
-    self.advanced_config_button = JButton('Advanced')
+    a=os.getcwd() + '\\gear_2.png'
+    image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
+    self.advanced_config_button = JButton(ImageIcon(image_path))
     self.advanced_config_button.addActionListener(self.show_advanced_config)
+    self.advanced_config_button.setPreferredSize(Dimension(23, 23))
     JPanel1.add(self.advanced_config_button, c)
 
     c = GridBagConstraints()
@@ -1039,14 +1046,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.anchor = GridBagConstraints.WEST
     panel.add( JPanel1 , c)
 
-    # ================== Add empty label ===================== #
+    # ================== Add small separation between filter and tables (Consider removing) ===================== #
 
     c = GridBagConstraints()
     y_pos += 1
     c.gridy = y_pos 
     c.fill = GridBagConstraints.HORIZONTAL
     c.anchor = GridBagConstraints.WEST
-    text1 = JLabel(" ")
+    text1 = JLabel("<html><hr></html> ")
     panel.add( text1 , c)
 
     # ================== Add table ===================== #
@@ -1060,7 +1067,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
     self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in Host:</b></html>')
-    self.colNames_meta = ('<html><b><meta> header name</b></html>','<html><b>Appears in endpoint:</b></html>')
+    self.colNames_meta = ('<html><b>Meta header identifier</b></html>','<html><b>Meta header content</b></html>')
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req, "tab")
@@ -1205,21 +1212,67 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     """Clears the Header-Host table. It is also called every time a filter is applied."""
     self.model_tab_req.setRowCount(0)
     self.model_tab_resp.setRowCount(0)
+    self.model_tab_meta.setRowCount(0)
     self.for_table = []
     self.header_host_table = []
     self.for_req_table = []
     self.for_resp_table = []
+    self.for_meta_table = []
     self.req_header_dict = {}
     self.resp_header_dict = {}
     self.headers_already_in_table = []
     self.last_row = 0
     self.last_len = 0
+    self.last_row_meta = 0
+    self.last_len_meta = 0
     return
+
+  def get_meta_tags(self):
+    global history2
+    history2 = []
+    history2 = self._callbacks.getProxyHistory()
+    self.meta_table = []
+    for item in history2:
+      response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+      resp_headers = response.split('\r\n')
+      for resp_head in resp_headers[1:]:   
+        if "Content-Type: text/html" in resp_head:
+          resp_html_head = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[1].split('</head>')[0]
+          metas = self.meta.findall(resp_html_head)
+          for meta in metas:
+            if meta not in self.meta_table:
+              request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+              req_headers = request.split('\r\n')
+              host = self.find_host(req_headers)
+              endpoint = req_headers[0]
+              self.meta_table.append([host, endpoint, meta])
+          break
+    
+    self.for_table_meta = []
+    for metax in self.meta_table:
+      meta_values = metax[2].split(" ")
+      if len(meta_values[1:]) == 1:
+        self.for_table_meta.append([meta_values[1], ""])
+      else:
+        self.for_table_meta.append([meta_values[1], str(meta_values[2:]).split("content=")[1].split(">")[0].strip('"')]) 
+
+    for table_entry_meta in self.for_table_meta[self.last_len_meta:]:
+      self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
+      self.last_row_meta += 1
+
+    self.last_len_meta = len(history2)
+    return
+
+
+
 
   def filter_entries(self, event):
     """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
     self.clear_table()
     
+    
+    self.get_meta_tags() 
+
     global history1
     history1 = []
     history1 = self._callbacks.getProxyHistory()
@@ -1278,10 +1331,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         k2 += 1
         k1 = 0
         if k2 == 1:
-          self.header_host_table.append(["", "//---------------- REQUEST HEADERS -----------------//", "\n"])
+          self.header_host_table.append(["", "//---------------- REQUEST HEADERS -----------------//", "\n"]) # used for saving data to file in disk
           
         if k2 == len(req_keys) + 1:
-          self.header_host_table.append(["\n", "//---------------- RESPONSE HEADERS -----------------//", "\n"])
+          self.header_host_table.append(["\n", "//---------------- RESPONSE HEADERS -----------------//", "\n"]) # used for saving data to file in disk
+
 
         for host in self.header_dict[key]:
           # Apply the filter:
@@ -1292,9 +1346,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             if keyword.strip() in host.lower() or keyword in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
               if [key, host] not in self.for_table:
                 if k1 == 0 and key not in self.headers_already_in_table:
-                  self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host])
+                  self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host]) # used for displaying data in Host-Header table
                   added_something = True
-                  self.header_host_table.append([key, key, host])
+                  self.header_host_table.append([key, key, host]) # used for saving data to file in disk
                   if key not in self.headers_already_in_table:
                     self.headers_already_in_table.append(key)
                   k1 = 1
@@ -1322,6 +1376,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if self.preset_filters.getSelectedItem() != self.config_dict["last_filter_type"]:
       self.config_dict["last_filter_type"] = self.preset_filters.getSelectedItem()
       self.update_config()
+    
+    
+
     return
 
   def createMenuItems(self, context_menu):

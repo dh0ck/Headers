@@ -1,4 +1,4 @@
 last_save_type -- TXT: Header -> Host
-last_filter_type -- Request + Response + <meta>
+last_filter_type -- Request + Response
 last_output_file -- C:\Users\allc\Desktop\j4.txt
 UI_theme -- dark
