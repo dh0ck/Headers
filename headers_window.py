@@ -15,131 +15,8 @@ burp_extender_instance = "" # variable global que sera el instance de bupr exten
 history1 = []
 host_endpoint = [] #se rellena al darle a filter en la tab, pero habra que arreglar que no haya duplicados cuando cambian los valores de los query string  rameters (o puedo dejar que se repitan y ponerlos todos.) lo bueno seria poner tambien el index del history y en el text area poner los headers de la req  los de la resp, separados por una =========, etc
 endpoint_table = []
+endpoint_table_meta = []
 selected_header_name = ""
-
-f = open('dangerous_headers.txt')
-dangerous_headers = []
-for line in f.readlines():
-  dangerous_headers.append(line.strip('\n'))
-f.close()
-
-f = open('security_headers.txt')
-security_headers = []
-for line in f.readlines():
-  security_headers.append(line.strip('\n'))
-f.close()
-
-f = open('potentially_dangerous_headers.txt')
-potentially_dangerous_headers = []
-for line in f.readlines():
-  potentially_dangerous_headers.append(line.strip('\n'))
-f.close()
-
-
-
-# el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se  ee un nuevo frame por cada doble click
-extra_info = JFrame("Extended header info")
-extra_info_panel = JPanel()
-extra_info_panel.setLayout(BoxLayout(extra_info_panel, BoxLayout.Y_AXIS ) )
-extra_info.setSize(400, 350)
-extra_info.setLocation(840, 0)
-extra_info.toFront()
-extra_info.setAlwaysOnTop(True)
-
-extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
-#extra_info_label1 = JLabel("<html><b><font color='{}'>Header Name:</font></b></html>".format(self.color1))
-extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
-extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
-extra_info_textarea1.setLineWrap(True)
-scrollPane_1 = JScrollPane(extra_info_textarea1)
-scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
-extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
-#extra_info_label2 = JLabel("<html><b><font color='{}'>Header Description:</font></b></html>".format(self.color1))
-extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
-extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
-extra_info_textarea2.setLineWrap(True)
-scrollPane_2 = JScrollPane(extra_info_textarea2)
-scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
-extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
-#extra_info_label3 = JLabel("<html><b><font color='{}'>Usage example:</font></b></html>".format(self.color1))
-extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
-extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
-extra_info_textarea3.setLineWrap(True)
-scrollPane_3 = JScrollPane(extra_info_textarea3)
-scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
-extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
-#extra_info_label4 = JLabel("<html><b><font color='{}'>URL describing header:</font></b></html>".format(self.color1))
-extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
-extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
-extra_info_textarea4.setLineWrap(True)
-scrollPane_4 = JScrollPane(extra_info_textarea4)
-scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
-extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
-#extra_info_label5 = JLabel("<html><b><font color='{}'>Potential risks associated with header:</font></b></html>".format(self.color1))
-extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
-extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
-extra_info_textarea5.setLineWrap(True)
-scrollPane_5 = JScrollPane(extra_info_textarea5)
-scrollPane_5.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
-
-for element in [extra_info_label1, scrollPane_1, extra_info_label2, scrollPane_2, extra_info_label3, scrollPane_3, extra_info_label4, scrollPane_4, extra_info_label5, scrollPane_5]:
-  extra_info_panel.add(element)
-
-extra_info.add(extra_info_panel)
-dict_req_headers = {}
-req_headers_description = open('request_headers.txt','r')
-for line in req_headers_description.readlines():
-  line_split = line.split('&&')
-  header_name = line_split[0]
-
-  header_description = line_split[1]
-  if header_description.rstrip() == '':
-    header_description = 'Description unavailable for header: ' + header_name
-
-  header_example = line_split[2]
-  if header_example.rstrip() == '':
-    header_example = 'Example unavailable for header: ' + header_name
-
-  header_url = line_split[3]
-  if header_url.rstrip() == '':
-    header_url = 'URL unavailable for header ' + header_name
-
-  header_risk = line_split[4]
-  if header_risk.rstrip() == '':
-    header_risk = 'Potential risks information unavailable for header ' + header_name
-  dict_req_headers[header_name] = (header_description, header_example, header_url, header_risk)
-req_headers_description.close()
-
-dict_resp_headers = {}
-resp_headers_description = open('response_headers.txt','r')
-for line in resp_headers_description.readlines():
-  line_split = line.split('&&')
-  header_name = line_split[0]
-
-  header_description = line_split[1]
-  if header_description.rstrip() == '':
-    header_description = 'Description unavailable for header: ' + header_name
-
-  header_example = line_split[2]
-  if header_example.rstrip() == '':
-    header_example = 'Example unavailable for header: ' + header_name
-
-  header_url = line_split[3]
-  if header_url.rstrip() == '':
-    header_url = 'URL unavailable for header ' + header_name
-
-  header_risk = line_split[4]
-  if header_risk.rstrip() == '':
-    header_risk = 'Potential risks information unavailable for header ' + header_name
-  dict_resp_headers[header_name] = (header_description, header_example, header_url, header_risk)
-resp_headers_description.close()
-
-
-
 
 class IssueTableModel(DefaultTableModel):
     """Extends the DefaultTableModel to make it readonly."""
@@ -151,7 +28,6 @@ class IssueTableModel(DefaultTableModel):
         """Returns True if cells are editable."""
         canEdit = [False, False, False]
         return canEdit[column]
-
 
 class IssueTableMouseListener(MouseListener):
   """Some necessary entries that must be present on all mouse listeners, so this is a parent class that is inherited by the other specific mouse listener clases below."""
@@ -186,37 +62,58 @@ class IssueTableMouseListener(MouseListener):
   def mouseExited(self, event):
     pass
 
-
 class IssueTableMouseListener_Window(IssueTableMouseListener):
     """Adds values to the extra information panel when an entry in the floating window is double clicked. The extra info panel is always there, double clicking elements of the floating window only makes it visible."""
     def mouseClicked(self, event):
         if event.getClickCount() == 1:  # single click on table elements
             header = self.getClickedRow(event)[0]
 
-            header = header[0].split('<font color="{}">'.format(self.color1))[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
-            extra_info_textarea1.setText(header)
-            if header in list(dict_req_headers.keys()) and header not in list(dict_resp_headers.keys()):
-              extra_info_textarea2.setText(dict_req_headers[header][0])
-              extra_info_textarea3.setText(dict_req_headers[header][1])
-              extra_info_textarea4.setText(dict_req_headers[header][2])
-              extra_info_textarea5.setText(dict_req_headers[header][3])
-            if header not in (list(dict_req_headers.keys())) and header not in list(dict_resp_headers.keys()):
-              extra_info_textarea2.setText('Description unavailable for header: ' + header)
-              extra_info_textarea3.setText('Example unavailable for header: ' + header)
-              extra_info_textarea4.setText('URL unavailable for header: ' + header)
-              extra_info_textarea5.setText('Potential risks unavailable for header: ' + header)
-            if header in list(dict_resp_headers.keys()):
-              extra_info_textarea2.setText(dict_resp_headers[header][0])
-              extra_info_textarea3.setText(dict_resp_headers[header][1])
-              extra_info_textarea4.setText(dict_resp_headers[header][2])
-              extra_info_textarea5.setText(dict_resp_headers[header][3])
+            header = header[0].split('<font color="{}">'.format(burp_extender_instance.color1))[1].split('</b></font>')[0] #debe haber mas abajo al reves el orden de las closing tabs b y font
+            burp_extender_instance.extra_info_textarea1.setText(header)
+            if header in list(burp_extender_instance.dict_req_headers.keys()) and header not in list(burp_extender_instance.dict_resp_headers.keys()):
+              burp_extender_instance.extra_info_textarea2.setText(burp_extender_instance.dict_req_headers[header][0])
+              burp_extender_instance.extra_info_textarea3.setText(burp_extender_instance.dict_req_headers[header][1])
+              burp_extender_instance.extra_info_textarea4.setText(burp_extender_instance.dict_req_headers[header][2])
+              burp_extender_instance.extra_info_textarea5.setText(burp_extender_instance.dict_req_headers[header][3])
+            if header not in (list(burp_extender_instance.dict_req_headers.keys())) and header not in list(burp_extender_instance.dict_resp_headers.keys()):
+              burp_extender_instance.extra_info_textarea2.setText('Description unavailable for header: ' + header)
+              burp_extender_instance.extra_info_textarea3.setText('Example unavailable for header: ' + header)
+              burp_extender_instance.extra_info_textarea4.setText('URL unavailable for header: ' + header)
+              burp_extender_instance.extra_info_textarea5.setText('Potential risks unavailable for header: ' + header)
+            if header in list(burp_extender_instance.dict_resp_headers.keys()):
+              burp_extender_instance.extra_info_textarea2.setText(burp_extender_instance.dict_resp_headers[header][0])
+              burp_extender_instance.extra_info_textarea3.setText(burp_extender_instance.dict_resp_headers[header][1])
+              burp_extender_instance.extra_info_textarea4.setText(burp_extender_instance.dict_resp_headers[header][2])
+              burp_extender_instance.extra_info_textarea5.setText(burp_extender_instance.dict_resp_headers[header][3])
         if event.getClickCount() == 2:  # double click to make extra info panel visible
-            extra_info.setVisible(True)
+            burp_extender_instance.extra_info.setVisible(True) 
 
+class IssueTableMouseListener_Meta(IssueTableMouseListener):
+  """Adds functionality to the Header-host table (to the <meta> tab) when its elements are clicked."""
+  def mouseClicked(self, event):
+    burp_extender_instance.is_meta = True 
+    if event.getClickCount() == 1:
+      tbl = event.getSource()
+      val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
+
+      identifier = val[0]
+      content = val[1]
+
+      global endpoint_table_meta
+      endpoint_table_meta = []
+      for (host, endpoint, meta) in burp_extender_instance.meta_table:
+        if identifier not in meta and content not in meta:
+          spl = endpoint.split(' ')
+          line = spl[0] + " " + host + " ".join(spl[1:]) 
+          endpoint_table_meta.append([endpoint]) #poner el host antes de la url pero despues del method
+          #endpoint_table_meta.append([line]) #poner el host antes de la url pero despues del method
+      
+      burp_extender_instance.update_meta_endpoints(endpoint_table_meta)
 
 class IssueTableMouseListener_Tab(IssueTableMouseListener):
     """Adds functionality to the Header-host table when its elements are clicked."""
     def mouseClicked(self, event):
+        burp_extender_instance.is_meta = False
         if event.getClickCount() == 1:
             
             tbl = event.getSource()
@@ -248,16 +145,15 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
         burp_extender_instance.selected_header = header_value#header # este lo settea ok para la de endpoints
         burp_extender_instance.update_endpoints(endpoint_table)
         
-
 class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
     """Adds functionality to the click actions on rows of the "Unique endpoints" and "All endpoints" tables."""
     def extra_symbol(self, head):
 
-      if head.split(": ")[0].lower() in security_headers:
+      if head.split(": ")[0].lower() in self.security_headers:
         extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
-      elif head.split(": ")[0].lower() in dangerous_headers:
+      elif head.split(": ")[0].lower() in self.dangerous_headers:
         extra_symbol = '<b><font color="#FF0000"> [ X ] </font><b>'
-      elif head.split(": ")[0].lower() in potentially_dangerous_headers:
+      elif head.split(": ")[0].lower() in self.potentially_dangerous_headers:
         extra_symbol = '<b><font color="#4FC3F7"> [ ? ] </font><b>'
       else:
         extra_symbol = ""
@@ -265,12 +161,10 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
 
     def mouseClicked(self, event):
-            
         if event.getClickCount() == 1:
             tbl = event.getSource()
 
         burp_extender_instance.clicked_endpoint(tbl, True)
-
 
 class IssueTable(JTable):
     """Table class for the tables used in the extension. Needed to give the capacity to tables to perform actions when their rows are clicked."""
@@ -279,11 +173,12 @@ class IssueTable(JTable):
         self.getTableHeader().setReorderingAllowed(False)
         if table_type == "tab":
           self.addMouseListener(IssueTableMouseListener_Tab())
+        elif table_type == "meta":
+          self.addMouseListener(IssueTableMouseListener_Meta())
         elif table_type == "window":
           self.addMouseListener(IssueTableMouseListener_Window())
         elif table_type == "endpoints":
           self.addMouseListener(IssueTableMouseListener_Endpoints())
-
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   """Main class of the Headers extension, instantiated by Burp."""
@@ -350,6 +245,127 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       f.write(key + " -- " + self.config_dict[key] + "\n")  #comprobar 
     f.close()
 
+  def read_headers(self):
+    f = open('dangerous_headers.txt')
+    self.dangerous_headers = []
+    for line in f.readlines():
+      self.dangerous_headers.append(line.strip('\n'))
+    f.close()
+
+    f = open('security_headers.txt')
+    self.security_headers = []
+    for line in f.readlines():
+      self.security_headers.append(line.strip('\n'))
+    f.close()
+
+    f = open('potentially_dangerous_headers.txt')
+    self.potentially_dangerous_headers = []
+    for line in f.readlines():
+      self.potentially_dangerous_headers.append(line.strip('\n'))
+    f.close()
+
+  def create_extra_info_window(self):
+    # el extra info window lo defino aqui fuera para que exista desde un principio y al hacer doble click en las tablas solamente se haga visible, pero no se  ee un nuevo frame por cada doble click
+    self.extra_info = JFrame("Extended header info")
+    self.extra_info_panel = JPanel()
+    self.extra_info_panel.setLayout(BoxLayout(self.extra_info_panel, BoxLayout.Y_AXIS ) )
+    self.extra_info.setSize(400, 350)
+    self.extra_info.setLocation(840, 0)
+    self.extra_info.toFront()
+    self.extra_info.setAlwaysOnTop(True)
+
+    self.extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
+    #extra_info_label1 = JLabel("<html><b><font color='{}'>Header Name:</font></b></html>".format(self.color1))
+    self.extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
+    self.extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
+    self.extra_info_textarea1.setLineWrap(True)
+    self.scrollPane_1 = JScrollPane(self.extra_info_textarea1)
+    self.scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
+    self.extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
+    #extra_info_label2 = JLabel("<html><b><font color='{}'>Header Description:</font></b></html>".format(self.color1))
+    self.extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
+    self.extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
+    self.extra_info_textarea2.setLineWrap(True)
+    self.scrollPane_2 = JScrollPane(self.extra_info_textarea2)
+    self.scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
+    self.extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
+    #extra_info_label3 = JLabel("<html><b><font color='{}'>Usage example:</font></b></html>".format(self.color1))
+    self.extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
+    self.extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
+    self.extra_info_textarea3.setLineWrap(True)
+    self.scrollPane_3 = JScrollPane(self.extra_info_textarea3)
+    self.scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
+    self.extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
+    #extra_info_label4 = JLabel("<html><b><font color='{}'>URL describing header:</font></b></html>".format(self.color1))
+    self.extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
+    self.extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
+    self.extra_info_textarea4.setLineWrap(True)
+    self.scrollPane_4 = JScrollPane(self.extra_info_textarea4)
+    self.scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
+    self.extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
+    #extra_info_label5 = JLabel("<html><b><font color='{}'>Potential risks associated with header:</font></b></html>".format(self.color1))
+    self.extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
+    self.extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
+    self.extra_info_textarea5.setLineWrap(True)
+    self.scrollPane_5 = JScrollPane(self.extra_info_textarea5)
+    self.scrollPane_5.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
+
+    for element in [self.extra_info_label1, self.scrollPane_1, self.extra_info_label2, self.scrollPane_2, self.extra_info_label3, self.scrollPane_3, self.extra_info_label4, self.scrollPane_4, self.extra_info_label5, self.scrollPane_5]:
+      self.extra_info_panel.add(element)
+
+    self.extra_info.add(self.extra_info_panel)
+    self.dict_req_headers = {}
+    self.req_headers_description = open('request_headers.txt','r')
+    for line in self.req_headers_description.readlines():
+      line_split = line.split('&&')
+      header_name = line_split[0]
+
+      header_description = line_split[1]
+      if header_description.rstrip() == '':
+        header_description = 'Description unavailable for header: ' + header_name
+
+      header_example = line_split[2]
+      if header_example.rstrip() == '':
+        header_example = 'Example unavailable for header: ' + header_name
+
+      header_url = line_split[3]
+      if header_url.rstrip() == '':
+        header_url = 'URL unavailable for header ' + header_name
+
+      header_risk = line_split[4]
+      if header_risk.rstrip() == '':
+        header_risk = 'Potential risks information unavailable for header ' + header_name
+      self.dict_req_headers[header_name] = (header_description, header_example, header_url, header_risk)
+    self.req_headers_description.close()
+
+    self.dict_resp_headers = {}
+    self.resp_headers_description = open('response_headers.txt','r')
+    for line in self.resp_headers_description.readlines():
+      line_split = line.split('&&')
+      header_name = line_split[0]
+
+      header_description = line_split[1]
+      if header_description.rstrip() == '':
+        header_description = 'Description unavailable for header: ' + header_name
+
+      header_example = line_split[2]
+      if header_example.rstrip() == '':
+        header_example = 'Example unavailable for header: ' + header_name
+
+      header_url = line_split[3]
+      if header_url.rstrip() == '':
+        header_url = 'URL unavailable for header ' + header_name
+
+      header_risk = line_split[4]
+      if header_risk.rstrip() == '':
+        header_risk = 'Potential risks information unavailable for header ' + header_name
+      self.dict_resp_headers[header_name] = (header_description, header_example, header_url, header_risk)
+    self.resp_headers_description.close()
+
   def compile_regex(self):
     """Compile regular expressions that will be used later by the extension to match URL parameters"""
     #matchea lo que haya entre = y & o entre = y ' ', para el ultimo parametro de la linea
@@ -362,6 +378,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.meta = re.compile('<meta .*?>')
 
   def find_host(self, req_headers):  
+    """Given a request-response object, find the Host to which it was requested"""
     for req_head in req_headers[1:]:
       if 'Host: ' in req_head:
         host = req_head.split(': ')[1]
@@ -369,6 +386,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return host
 
   def create_advanced_config_frame(self):
+    """Create new frame with advanced settings. It's always present, but only visible when the gear button is clicked"""
     self.advanced_config_panel = JFrame("Advanced configuration")
     self.advanced_config_panel.toFront()
     self.advanced_config_panel.setAlwaysOnTop(True)
@@ -378,6 +396,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def show_advanced_config(self, event):
+    """Show the advanced configuration window when clicking the gear button"""
     self.advanced_config_panel.setVisible(True)
 
   def registerExtenderCallbacks(self, callbacks):
@@ -406,6 +425,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.apply_config()
     self.compile_regex()
     self.create_advanced_config_frame()
+    self.create_extra_info_window()
+    self.read_headers()
+    self.is_meta = False
     
     return
     
@@ -500,11 +522,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def extra_symbol(self, head):
     """Creates the extra symbols for security [+], dangerous [X] and potentially dangrous [?] headers that are shown in the request header summary at the right side of the screen."""
-    if head.split(": ")[0].lower() in security_headers:
+    if head.split(": ")[0].lower() in self.security_headers:
       extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
-    elif head.split(": ")[0].lower() in dangerous_headers:
+    elif head.split(": ")[0].lower() in self.dangerous_headers:
       extra_symbol = '<b><font color="#FF0000"> [ X ] </font><b>'
-    elif head.split(": ")[0].lower() in potentially_dangerous_headers:
+    elif head.split(": ")[0].lower() in self.potentially_dangerous_headers:
       extra_symbol = '<b><font color="#4FC3F7"> [ ? ] </font><b>'
     else:
       extra_symbol = ""
@@ -566,45 +588,63 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #replace_here = replace_here.replace('[*]','<font color="{}">[ * ]</font>'.format(self.color6)) 
     return replace_here
 
-  def clicked_endpoint(self, tbl, from_click):#, from_unique):
-    """Fill the summary (panel at the right side of the extension tab) when an endpoint (either from the "Unique endpoints" table or from the "All endpoints table") is clicked. The summary contains the request and response headers, marked with symbols if they are security headers, dangerous headers, or potentially dangerous headers."""
+ 
     
+
+  def clicked_endpoint(self, tbl, from_click):
+    """Fill the summary (panel at the right side of the extension tab) when an endpoint (either from the "Unique endpoints" table or from the "All endpoints table") is clicked. The summary contains the request and response headers, marked with symbols if they are security headers, dangerous headers, or potentially dangerous headers."""
+
     if from_click:
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
     else:
       val = tbl.getModel().getDataVector().elementAt(0)
       tbl.setRowSelectionInterval(0, 0)
 
-        
     for item in history1:
-      request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+      request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
       endpoint = req_headers[0]
       buffer = ""
 
       # the next two ifs are for matching to elements in the history if we choose from the unique endpoints or from all endpoints, must be processed differently for the comparison
-      if tbl.getModel() == self.model_unique_endpoints:
+      if tbl.getModel() == self.model_unique_endpoints and self.is_meta == False:
         match = self.replace_symbol(self.apply_regex(endpoint)) == val[0].split(' - ')[1].strip('<html>').strip('</html>') # si coincide un endpoint del history con el que hemos seleccionado
         
+      if tbl.getModel() == self.model_unique_endpoints and self.is_meta == True:
+        match = self.replace_symbol(self.apply_regex(endpoint)) == val[0]
+
       if tbl.getModel() == self.model_all_endpoints:
         match = endpoint == val[0].strip('<html>').strip('</html>')
 
-
       if match:
-        host = self.find_host(req_headers)
-        '''for req_head in req_headers[1:]: # este for encuentra el Host header
-          if 'Host: ' in req_head:
-            host = req_head.split(': ')[1]
-            break'''
-
+        host = self.find_host(req_headers) #del loop del history
         clicked_header = self.selected_header
 
-        if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
-          burp_extender_instance.header_summary.setText("")
+        '''print('888888888888888')
+        print(host)
+        print(self.selected_host)
+        print('888888888888888')'''
+        
+        if self.is_meta:
+          print("META0")
+          print(val)
+          print(endpoint) 
+          ''' en el que genera el nombre que sale en la endpoint table (ahora sale el endpoint solo) añadir el host al nombre y luego hacer split, o si eso interfiere con lo anterior que ya habia, crear una lista de listas con pares de host - header y mirarlo ahi para hacer lo siguiente'''
+
+        #if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
+        if host == self.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
+
+          if self.is_meta:
+            print("META1")
+
+            self.header_summary.setText("asfdasdfafbuffer")
+            return
+
+          
+          self.header_summary.setText("")
           buffer += '<html><h2><font color="{}">Request headers:</h2>'.format(self.color1) + "\n"
           buffer += '<b>' + req_headers[0] + '</b>'
           buffer += '<ul padding-left=0>'
-          print(sorted(req_headers[1:]))
           for req_head in sorted(req_headers[1:]): # este for encuentra el Host header
 
               extra_symbol = self.extra_symbol(req_head)
@@ -625,7 +665,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           buffer += '<h2><font color="{}">Response headers:</h2>'.format(self.color1)
           buffer += '<ul padding-left=0; width="10px">'
 
-          response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+          response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
           for resp_head in sorted(resp_headers[1:]):
 
@@ -648,7 +688,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           buffer += '<li><b><font color="#00FF00"> [ + ] </font><b>: Security header</li>'
           buffer += '<li><b><font color="#FF0000"> [ X ] </font><b>: Dangerous or too verbose header</li>'
           buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
-          burp_extender_instance.header_summary.setText(buffer + "</html>")
+          self.header_summary.setText(buffer + "</html>")
           
           # para que el summary no haga scroll down hasta el final al actualizarlo
           self.header_summary.setSelectionStart(0)
@@ -879,8 +919,35 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         print('Error matching second regex when computing unique endpoints.')
     return string_for_regex
 
+  def update_meta_endpoints(self, endpoint_table):
+    self.model_unique_endpoints.setRowCount(0)
+    self.model_all_endpoints.setRowCount(0)
+    self.unique_entries = []
+
+    for entry in endpoint_table:
+      self.model_all_endpoints.addRow(entry)
+
+    for entry in endpoint_table:
+      entry[0] = self.apply_regex(entry[0])
+        
+      if entry not in self.unique_entries:
+        self.unique_entries.append(entry)
+        #coger el host del elemento clickado en la tabla de la izda
+        #host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
+        self.model_unique_endpoints.addRow( [ self.replace_symbol(entry[0]) ])
+        
+
+    self.table_unique_endpoints.setRowSelectionInterval(0,0) 
+    self.clicked_endpoint(self.table_unique_endpoints, False)
+    return
+
+
   def update_endpoints(self, endpoint_table):
     """Update the "Unique endpoints" table and the "All endpoints" table when a row in the Header-Host table (at the left side of the extension tab) is clicked. The endpoint tables show all the endpoints that exist in the Burp history for which the Host request header is the one clicked on the Header-Host table."""
+
+    #for item in endpoint_table:
+    #  print(item)
+
     self.model_unique_endpoints.setRowCount(0)
     self.model_all_endpoints.setRowCount(0)
     self.unique_entries = []
@@ -914,7 +981,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         ###################################
         #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
-        print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
+        #print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
         self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
         #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
         #self.model_unique_endpoints.addRow( [ entry[0] ])
@@ -1082,7 +1149,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(100)
 
     self.model_tab_meta = IssueTableModel([["",""]], self.colNames_meta)
-    self.table_tab_meta = IssueTable(self.model_tab_meta, "tab")
+    self.table_tab_meta = IssueTable(self.model_tab_meta, "meta")
 
     self.table_tab_meta.getColumnModel().getColumn(0).setPreferredWidth(100)
     self.table_tab_meta.getColumnModel().getColumn(1).setPreferredWidth(100)
@@ -1217,7 +1284,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.header_host_table = []
     self.for_req_table = []
     self.for_resp_table = []
-    self.for_meta_table = []
+    self.for_table_meta = []
     self.req_header_dict = {}
     self.resp_header_dict = {}
     self.headers_already_in_table = []
@@ -1252,19 +1319,24 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for metax in self.meta_table:
       meta_values = metax[2].split(" ")
       if len(meta_values[1:]) == 1:
-        self.for_table_meta.append([meta_values[1], ""])
+        val = [meta_values[1], ""]
+        if val not in self.for_table_meta:
+          self.for_table_meta.append(val)
       else:
-        self.for_table_meta.append([meta_values[1], str(meta_values[2:]).split("content=")[1].split(">")[0].strip('"')]) 
+        val = [meta_values[1], str(meta_values[2:]).split("content=")[1].split(">")[0].strip('"')]
+        if val not in self.for_table_meta:
+          self.for_table_meta.append(val) 
+    
+    # sort the entries in the Host-Header table for the <meta> tab
+    self.for_table_meta = sorted(self.for_table_meta)
 
     for table_entry_meta in self.for_table_meta[self.last_len_meta:]:
+      print(table_entry_meta)
       self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
       self.last_row_meta += 1
 
     self.last_len_meta = len(history2)
     return
-
-
-
 
   def filter_entries(self, event):
     """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
