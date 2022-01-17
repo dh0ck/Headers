@@ -97,17 +97,19 @@ class IssueTableMouseListener_Meta(IssueTableMouseListener):
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
 
       identifier = val[0]
-      content = val[1]
+      clicked_host = val[1]
 
       global endpoint_table_meta
       endpoint_table_meta = []
       for (host, endpoint, meta) in burp_extender_instance.meta_table:
-        if identifier not in meta and content not in meta:
+        if identifier not in meta and clicked_host not in meta:
           spl = endpoint.split(' ')
           line = spl[0] + " " + host + " ".join(spl[1:]) 
           endpoint_table_meta.append([endpoint]) #poner el host antes de la url pero despues del method
           #endpoint_table_meta.append([line]) #poner el host antes de la url pero despues del method
       
+      burp_extender_instance.selected_meta_header = identifier#header # este lo settea ok para la de endpoints
+      burp_extender_instance.selected_host = clicked_host
       burp_extender_instance.update_meta_endpoints(endpoint_table_meta)
 
 class IssueTableMouseListener_Tab(IssueTableMouseListener):
@@ -121,6 +123,7 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
             
             header = val[0]
             clicked_host = val[1]
+            
             k = tbl.getSelectedRow()
             if header == '':
               while header == '':
@@ -136,6 +139,7 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
           
           if clicked_host == host:# and endpoint not in endpoint_table:
             endpoint_table.append([endpoint])
+        
         
         ###global burp_extender_instance #variable global que representa la instancia de IBurpExtender que se crea al cargar la extension. se usa para acceder desde fuera (especialmente desde el mouse event handler para actualizar la endpoint_table) a propiedades y metodos de la instancia "principal" de la extension. el valor se lo doy dentro de la intancia, igualando esta variable a self
         global selected_header_name
@@ -413,6 +417,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.for_req_table = []
     self.for_resp_table = []
     self.headers_already_in_table = []
+    self.meta_headers_already_in_table = []
     self.last_len = 0
     self.last_len_meta = 0
     self.last_row = 0
@@ -588,9 +593,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #replace_here = replace_here.replace('[*]','<font color="{}">[ * ]</font>'.format(self.color6)) 
     return replace_here
 
- 
-    
-
   def clicked_endpoint(self, tbl, from_click):
     """Fill the summary (panel at the right side of the extension tab) when an endpoint (either from the "Unique endpoints" table or from the "All endpoints table") is clicked. The summary contains the request and response headers, marked with symbols if they are security headers, dangerous headers, or potentially dangerous headers."""
 
@@ -604,7 +606,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
       endpoint = req_headers[0]
-      buffer = ""
 
       # the next two ifs are for matching to elements in the history if we choose from the unique endpoints or from all endpoints, must be processed differently for the comparison
       if tbl.getModel() == self.model_unique_endpoints and self.is_meta == False:
@@ -620,25 +621,78 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         host = self.find_host(req_headers) #del loop del history
         clicked_header = self.selected_header
 
-        '''print('888888888888888')
-        print(host)
-        print(self.selected_host)
-        print('888888888888888')'''
-        
+
+        # Run this block and exit this function if an item from the Meta headers tab was clicked
         if self.is_meta:
-          print("META0")
-          print(val)
-          print(endpoint) 
-          ''' en el que genera el nombre que sale en la endpoint table (ahora sale el endpoint solo) añadir el host al nombre y luego hacer split, o si eso interfiere con lo anterior que ya habia, crear una lista de listas con pares de host - header y mirarlo ahi para hacer lo siguiente'''
+          metas = []
+          response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+          resp_headers = response.split('\r\n')
+          for k, resp_head in enumerate(resp_headers[1:]):   
+            if "Content-Type: text/html" in resp_head:
+              resp_html_head = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[1].split('</head>')[0]#.encode('utf-8')
+              metas = self.meta.findall(resp_html_head)
 
-        #if host == burp_extender_instance.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
+          buffer = "<h2><font color={}>Meta headers</font></h2>".format(self.color1)
+          buffer += "<b>Host</b>: {}<br>".format(host) 
+          buffer += "<b>Endpoint</b>: {}<br>".format(endpoint)
+          print('==============0')
+          print(host)
+          print(endpoint)
+          print('==============0\n')
+          for meta in metas:
+            meta_line =  meta.encode('utf-8').replace('<','&lt;').replace('>','&gt;')
+            # Add colors to the meta fields in the summary pannel
+            meta_line = meta_line.replace('&lt;meta', '<font color={}>&lt;meta</font>'.format(self.color2))
+            meta_line = meta_line.replace(' charset=', '<font color={}> charset</font>='.format(self.color3))
+            meta_line = meta_line.replace(' name=', '<font color={}> name</font>='.format(self.color3))
+            meta_line = meta_line.replace(' property=', '<font color={}> property</font>='.format(self.color3))
+            meta_line = meta_line.replace(' http-equiv=', '<font color={}> http-equiv</font>='.format(self.color3))
+            meta_line = meta_line.replace(' content=', '<font color={}> content</font>='.format(self.color3))
+            meta_line = meta_line.replace('&gt;', '<font color={}>&gt;</font>'.format(self.color2))
+
+            buffer += '<li>' + meta_line + '</li>\n'
+          buffer += '</ul></html>'
+
+          self.header_summary.setText(buffer)
+          return
+
+
         if host == self.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
+          buffer = ""
 
+          '''# Run this block and exit this function if an item from the Meta headers tab was clicked
           if self.is_meta:
-            print("META1")
+            metas = []
+            response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+            resp_headers = response.split('\r\n')
+            for k, resp_head in enumerate(resp_headers[1:]):   
+              if "Content-Type: text/html" in resp_head:
+                resp_html_head = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[1].split('</head>')[0]#.encode('utf-8')
+                metas = self.meta.findall(resp_html_head)
+            
+            buffer = "<h2><font color={}>Meta headers</font></h2>".format(self.color1)
+            buffer += "<b>Host</b>: {}<br>".format(host) 
+            buffer += "<b>Endpoint</b>: {}<br>".format(endpoint)
+            print('==============0')
+            print(host)
+            print(endpoint)
+            print('==============0\n')
+            for meta in metas:
+              meta_line =  meta.encode('utf-8').replace('<','&lt;').replace('>','&gt;')
+              # Add colors to the meta fields in the summary pannel
+              meta_line = meta_line.replace('&lt;meta', '<font color={}>&lt;meta</font>'.format(self.color2))
+              meta_line = meta_line.replace('charset=', '<font color={}>charset</font>='.format(self.color3))
+              meta_line = meta_line.replace('name=', '<font color={}>name</font>='.format(self.color3))
+              meta_line = meta_line.replace('property=', '<font color={}>property</font>='.format(self.color3))
+              meta_line = meta_line.replace('http-equiv=', '<font color={}>http-equiv</font>='.format(self.color3))
+              meta_line = meta_line.replace('content=', '<font color={}>content</font>='.format(self.color3))
+              meta_line = meta_line.replace('&gt;', '<font color={}>&gt;</font>'.format(self.color2))
+              
+              buffer += '<li>' + meta_line + '</li>\n'
+            buffer += '</ul></html>'
 
-            self.header_summary.setText("asfdasdfafbuffer")
-            return
+            self.header_summary.setText(buffer)
+            return'''
 
           
           self.header_summary.setText("")
@@ -941,12 +995,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.clicked_endpoint(self.table_unique_endpoints, False)
     return
 
-
   def update_endpoints(self, endpoint_table):
     """Update the "Unique endpoints" table and the "All endpoints" table when a row in the Header-Host table (at the left side of the extension tab) is clicked. The endpoint tables show all the endpoints that exist in the Burp history for which the Host request header is the one clicked on the Header-Host table."""
-
-    #for item in endpoint_table:
-    #  print(item)
 
     self.model_unique_endpoints.setRowCount(0)
     self.model_all_endpoints.setRowCount(0)
@@ -959,11 +1009,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       entry[0] = self.apply_regex(entry[0])
         
       if entry not in self.unique_entries:
+        
         self.unique_entries.append(entry)
         #coger el host del elemento clickado en la tabla de la izda
-        host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
+        try:
+          host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
+        except:
+          host = self.table_tab_resp.getModel().getDataVector().elementAt(self.table_tab_resp.getSelectedRow())[1]
         colors = self.to_get_colors(entry[0], host, True)  #colors es un dict
 
+        
         symbols_color = {}
         for color in colors.keys():
           
@@ -983,6 +1038,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
         #print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
         self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
+        print( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
         #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
         #self.model_unique_endpoints.addRow( [ entry[0] ])
         
@@ -1111,7 +1167,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridy = y_pos 
     c.fill = GridBagConstraints.HORIZONTAL
     c.anchor = GridBagConstraints.WEST
-    panel.add( JPanel1 , c)
+    panel.add(JPanel1 , c)
 
     # ================== Add small separation between filter and tables (Consider removing) ===================== #
 
@@ -1172,7 +1228,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # ================== Add endpoints table ===================== #
 
-    ##self.model_unique_endpoints = IssueTableModel([[""]], ["HTTP method","HTTP version", "URL"])
     self.model_unique_endpoints = IssueTableModel([[""]], ["Unique endpoints for selected host"])
     self.table_unique_endpoints = IssueTable(self.model_unique_endpoints, "endpoints")
 
@@ -1288,6 +1343,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.req_header_dict = {}
     self.resp_header_dict = {}
     self.headers_already_in_table = []
+    self.meta_headers_already_in_table = []
     self.last_row = 0
     self.last_len = 0
     self.last_row_meta = 0
@@ -1318,22 +1374,57 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.for_table_meta = []
     for metax in self.meta_table:
       meta_values = metax[2].split(" ")
+      host = metax[0]
       if len(meta_values[1:]) == 1:
         val = [meta_values[1], ""]
         if val not in self.for_table_meta:
           self.for_table_meta.append(val)
       else:
-        val = [meta_values[1], str(meta_values[2:]).split("content=")[1].split(">")[0].strip('"')]
+        val = [meta_values[1], host]
         if val not in self.for_table_meta:
           self.for_table_meta.append(val) 
     
     # sort the entries in the Host-Header table for the <meta> tab
     self.for_table_meta = sorted(self.for_table_meta)
 
+    keywords = self.filter.getText().lower().split(',')
+    k1 = 0
     for table_entry_meta in self.for_table_meta[self.last_len_meta:]:
-      print(table_entry_meta)
+      if self.last_row_meta not in self.meta_headers_already_in_table:
+        self.meta_headers_already_in_table.append(self.last_row_meta)
+
+      #if k1 == 0:# and self.last_row_meta not in self.meta_headers_already_in_table:
       self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
       self.last_row_meta += 1
+      '''  k1 = 1
+      else:
+        #self.for_table_meta.append(["", table_entry_meta])
+        self.model_tab_meta.insertRow(self.last_row_meta, ["",table_entry_meta[1:]])'''
+
+
+############ de lo siguiente coger lo que interese, pero hay que cambiar cosas, no todo es igual
+      
+      '''for keyword in keywords:
+           if keyword.strip() in host.lower() or keyword in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
+             if [key, host] not in self.for_table:
+               if k1 == 0 and key not in self.headers_already_in_table:
+                 self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host]) # used for displaying data in   -Header table
+                 added_something = True
+                 self.header_host_table.append([key, key, host]) # used for saving data to file in disk
+                 if key not in self.headers_already_in_table:
+                   self.headers_already_in_table.append(key)
+                 k1 = 1
+               else:
+                 self.for_table.append(["", host])
+                 self.header_host_table.append([key, "", host])
+                 if key not in self.headers_already_in_table:
+                   self.headers_already_in_table.append(key)'''
+
+#############3
+
+
+    '''if added_something:
+      self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>', '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])'''
 
     self.last_len_meta = len(history2)
     return
