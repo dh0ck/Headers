@@ -99,14 +99,24 @@ class IssueTableMouseListener_Meta(IssueTableMouseListener):
       identifier = val[0]
       clicked_host = val[1]
 
-      global endpoint_table_meta
+      k = tbl.getSelectedRow()
+      if identifier == '':
+        while identifier == '':
+          k -= 1
+          identifier = tbl.getModel().getDataVector().elementAt(k)[0]
+
+      global endpoint_table_meta # igual no tiene que ser gobal
       endpoint_table_meta = []
+
+      # meta_table tiene columnas: host | url | meta tag, una para cada tag, repitiendo host y url si hay mas de una tag en una url
       for (host, endpoint, meta) in burp_extender_instance.meta_table:
         if identifier not in meta and clicked_host not in meta:
           spl = endpoint.split(' ')
           line = spl[0] + " " + host + " ".join(spl[1:]) 
           endpoint_table_meta.append([endpoint]) #poner el host antes de la url pero despues del method
           #endpoint_table_meta.append([line]) #poner el host antes de la url pero despues del method
+
+          ESTA COGIENDO ENPOINTS QUE NO CORRESPONDEN, VER SI ES QUE COINCIDEN CON UN HOST DIFERENTE. TAMBIEN TENGO QUE APLICAR REGEX EN LOS UNIQUE ENDPOINTS
       
       burp_extender_instance.selected_meta_header = identifier#header # este lo settea ok para la de endpoints
       burp_extender_instance.selected_host = clicked_host
@@ -1371,60 +1381,44 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               self.meta_table.append([host, endpoint, meta])
           break
     
-    self.for_table_meta = []
+    self.for_table_meta = [] # the two columns that appear on the meta tag in the left table
+    meta_header_item = []
     for metax in self.meta_table:
       meta_values = metax[2].split(" ")
       host = metax[0]
-      if len(meta_values[1:]) == 1:
+      if len(meta_values[1:]) == 1: # if the meta tag has two items. 
         val = [meta_values[1], ""]
         if val not in self.for_table_meta:
           self.for_table_meta.append(val)
-      else:
+          meta_header_item.append(meta_values[1]) #only meta header first item, used below
+      else: # if the meta tag has more than two items
         val = [meta_values[1], host]
         if val not in self.for_table_meta:
           self.for_table_meta.append(val) 
+          meta_header_item.append(meta_values[1])
+
     
-    # sort the entries in the Host-Header table for the <meta> tab
-    self.for_table_meta = sorted(self.for_table_meta)
+    self.for_table_meta_uniques = sorted([list(x) for x in list({tuple(i) for i in self.for_table_meta})]) 
 
     keywords = self.filter.getText().lower().split(',')
-    k1 = 0
-    for table_entry_meta in self.for_table_meta[self.last_len_meta:]:
-      if self.last_row_meta not in self.meta_headers_already_in_table:
-        self.meta_headers_already_in_table.append(self.last_row_meta)
+    self.meta_headers_already_in_table = []
+    
+    last_meta = ''
+    k = 0
+    for table_entry_meta in self.for_table_meta_uniques:
+      if last_meta != table_entry_meta[0] and k > 0:
+        self.model_tab_meta.insertRow(self.last_row_meta, ['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>', '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])
+        self.last_row_meta += 1
 
-      #if k1 == 0:# and self.last_row_meta not in self.meta_headers_already_in_table:
-      self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
-      self.last_row_meta += 1
-      '''  k1 = 1
+      if table_entry_meta[0] not in self.meta_headers_already_in_table:
+        self.meta_headers_already_in_table.append(table_entry_meta[0])
+        self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
+        self.last_row_meta += 1
       else:
-        #self.for_table_meta.append(["", table_entry_meta])
-        self.model_tab_meta.insertRow(self.last_row_meta, ["",table_entry_meta[1:]])'''
-
-
-############ de lo siguiente coger lo que interese, pero hay que cambiar cosas, no todo es igual
-      
-      '''for keyword in keywords:
-           if keyword.strip() in host.lower() or keyword in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
-             if [key, host] not in self.for_table:
-               if k1 == 0 and key not in self.headers_already_in_table:
-                 self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host]) # used for displaying data in   -Header table
-                 added_something = True
-                 self.header_host_table.append([key, key, host]) # used for saving data to file in disk
-                 if key not in self.headers_already_in_table:
-                   self.headers_already_in_table.append(key)
-                 k1 = 1
-               else:
-                 self.for_table.append(["", host])
-                 self.header_host_table.append([key, "", host])
-                 if key not in self.headers_already_in_table:
-                   self.headers_already_in_table.append(key)'''
-
-#############3
-
-
-    '''if added_something:
-      self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>', '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])'''
+        self.model_tab_meta.insertRow(self.last_row_meta, ["",table_entry_meta[1]])
+        self.last_row_meta += 1
+      last_meta = table_entry_meta[0]
+      k += 1
 
     self.last_len_meta = len(history2)
     return
