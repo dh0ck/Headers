@@ -110,13 +110,14 @@ class IssueTableMouseListener_Meta(IssueTableMouseListener):
 
       # meta_table tiene columnas: host | url | meta tag, una para cada tag, repitiendo host y url si hay mas de una tag en una url
       for (host, endpoint, meta) in burp_extender_instance.meta_table:
-        if identifier not in meta and clicked_host not in meta:
+        #if identifier not in meta and clicked_host != host:
+        if clicked_host == host:
           spl = endpoint.split(' ')
-          line = spl[0] + " " + host + " ".join(spl[1:]) 
+          line = spl[0] + " :: " + host + " :: " + " ".join(spl[1:]) 
           endpoint_table_meta.append([endpoint]) #poner el host antes de la url pero despues del method
           #endpoint_table_meta.append([line]) #poner el host antes de la url pero despues del method
 
-          ESTA COGIENDO ENPOINTS QUE NO CORRESPONDEN, VER SI ES QUE COINCIDEN CON UN HOST DIFERENTE. TAMBIEN TENGO QUE APLICAR REGEX EN LOS UNIQUE ENDPOINTS
+          #ESTA COGIENDO ENPOINTS QUE NO CORRESPONDEN, VER SI ES QUE COINCIDEN CON UN HOST DIFERENTE. TAMBIEN TENGO QUE APLICAR REGEX EN LOS UNIQUE ENDPOINTS
       
       burp_extender_instance.selected_meta_header = identifier#header # este lo settea ok para la de endpoints
       burp_extender_instance.selected_host = clicked_host
@@ -196,9 +197,6 @@ class IssueTable(JTable):
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   """Main class of the Headers extension, instantiated by Burp."""
-  def __init__(self):
-    self.selected_host = ""
-    self.selected_header = ""
 
   def apply_config(self):
     """Read the configuration file and load the configurations. It is run when the extension loads."""
@@ -442,6 +440,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.create_advanced_config_frame()
     self.create_extra_info_window()
     self.read_headers()
+    self.selected_host = ""
+    self.selected_header = ""
     self.is_meta = False
     
     return
@@ -615,26 +615,30 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for item in history1:
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
+      iter_host = self.find_host(req_headers)
       endpoint = req_headers[0]
+      match = False
 
-      # the next two ifs are for matching to elements in the history if we choose from the unique endpoints or from all endpoints, must be processed differently for the comparison
-      if tbl.getModel() == self.model_unique_endpoints and self.is_meta == False:
-        match = self.replace_symbol(self.apply_regex(endpoint)) == val[0].split(' - ')[1].strip('<html>').strip('</html>') # si coincide un endpoint del history con el que hemos seleccionado
+
+      # the next three ifs are for matching to elements in the history if we choose from the unique endpoints or from all endpoints, must be processed differently for the comparison
+      if tbl.getModel() == self.model_unique_endpoints and self.is_meta == False and iter_host == self.selected_host:
+        match = self.replace_symbol(self.apply_regex(endpoint)) == val[0].split(' - ')[1].strip('<html>').strip('</html>') 
         
-      if tbl.getModel() == self.model_unique_endpoints and self.is_meta == True:
+      if tbl.getModel() == self.model_unique_endpoints and self.is_meta == True and iter_host == self.selected_host:
         match = self.replace_symbol(self.apply_regex(endpoint)) == val[0]
 
-      if tbl.getModel() == self.model_all_endpoints:
+      if tbl.getModel() == self.model_all_endpoints and iter_host == self.selected_host:
         match = endpoint == val[0].strip('<html>').strip('</html>')
 
       if match:
         host = self.find_host(req_headers) #del loop del history
         clicked_header = self.selected_header
 
-
         # Run this block and exit this function if an item from the Meta headers tab was clicked
         if self.is_meta:
           metas = []
+          request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+          host = self.find_host(req_headers) #del loop del history
           response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
           for k, resp_head in enumerate(resp_headers[1:]):   
@@ -645,10 +649,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           buffer = "<h2><font color={}>Meta headers</font></h2>".format(self.color1)
           buffer += "<b>Host</b>: {}<br>".format(host) 
           buffer += "<b>Endpoint</b>: {}<br>".format(endpoint)
-          print('==============0')
-          print(host)
-          print(endpoint)
-          print('==============0\n')
           for meta in metas:
             meta_line =  meta.encode('utf-8').replace('<','&lt;').replace('>','&gt;')
             # Add colors to the meta fields in the summary pannel
@@ -670,41 +670,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         if host == self.selected_host: # si coincide el host del history con el que clickamos en la tabla de headers. 
           buffer = ""
 
-          '''# Run this block and exit this function if an item from the Meta headers tab was clicked
-          if self.is_meta:
-            metas = []
-            response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
-            resp_headers = response.split('\r\n')
-            for k, resp_head in enumerate(resp_headers[1:]):   
-              if "Content-Type: text/html" in resp_head:
-                resp_html_head = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[1].split('</head>')[0]#.encode('utf-8')
-                metas = self.meta.findall(resp_html_head)
-            
-            buffer = "<h2><font color={}>Meta headers</font></h2>".format(self.color1)
-            buffer += "<b>Host</b>: {}<br>".format(host) 
-            buffer += "<b>Endpoint</b>: {}<br>".format(endpoint)
-            print('==============0')
-            print(host)
-            print(endpoint)
-            print('==============0\n')
-            for meta in metas:
-              meta_line =  meta.encode('utf-8').replace('<','&lt;').replace('>','&gt;')
-              # Add colors to the meta fields in the summary pannel
-              meta_line = meta_line.replace('&lt;meta', '<font color={}>&lt;meta</font>'.format(self.color2))
-              meta_line = meta_line.replace('charset=', '<font color={}>charset</font>='.format(self.color3))
-              meta_line = meta_line.replace('name=', '<font color={}>name</font>='.format(self.color3))
-              meta_line = meta_line.replace('property=', '<font color={}>property</font>='.format(self.color3))
-              meta_line = meta_line.replace('http-equiv=', '<font color={}>http-equiv</font>='.format(self.color3))
-              meta_line = meta_line.replace('content=', '<font color={}>content</font>='.format(self.color3))
-              meta_line = meta_line.replace('&gt;', '<font color={}>&gt;</font>'.format(self.color2))
-              
-              buffer += '<li>' + meta_line + '</li>\n'
-            buffer += '</ul></html>'
-
-            self.header_summary.setText(buffer)
-            return'''
-
-          
           self.header_summary.setText("")
           buffer += '<html><h2><font color="{}">Request headers:</h2>'.format(self.color1) + "\n"
           buffer += '<b>' + req_headers[0] + '</b>'
@@ -1365,21 +1330,26 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     history2 = []
     history2 = self._callbacks.getProxyHistory()
     self.meta_table = []
-    for item in history2:
-      response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
-      resp_headers = response.split('\r\n')
-      for resp_head in resp_headers[1:]:   
-        if "Content-Type: text/html" in resp_head:
-          resp_html_head = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[1].split('</head>')[0]
-          metas = self.meta.findall(resp_html_head)
-          for meta in metas:
-            if meta not in self.meta_table:
-              request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
-              req_headers = request.split('\r\n')
-              host = self.find_host(req_headers)
-              endpoint = req_headers[0]
-              self.meta_table.append([host, endpoint, meta])
-          break
+
+    for item in history2: 
+      ''' This try / except is because for some reason some entries fail somewhere here. also happens for the normal request responses, not only metas'''
+      try:
+        response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+        resp_headers = response.split('\r\n')
+        for resp_head in resp_headers[1:]:   
+          if "Content-Type: text/html" in resp_head:
+            resp_html_head = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[1].split('</head>')[0]
+            metas = self.meta.findall(resp_html_head)
+            for meta in metas:
+              if meta not in self.meta_table:
+                request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+                req_headers = request.split('\r\n')
+                host = self.find_host(req_headers)
+                endpoint = req_headers[0]
+                self.meta_table.append([host, endpoint, meta])
+            break
+      except:
+        pass
     
     self.for_table_meta = [] # the two columns that appear on the meta tag in the left table
     meta_header_item = []
@@ -1427,49 +1397,56 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
     self.clear_table()
     
-    
-    self.get_meta_tags() 
+    if True:
+      self.get_meta_tags() 
 
     global history1
     history1 = []
     history1 = self._callbacks.getProxyHistory()
     for k_progress, item in enumerate(history1): # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
-      request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
-      req_headers = request.split('\r\n')
-      
-      # -------- find the host for every request --------#
-      host = self.find_host(req_headers)
-      
-      if (host, req_headers[0]) not in host_endpoint: #si encuentro el index del history meterlo en la siguiente linea
-        host_endpoint.append((host, req_headers[0]))
-      # -------------------- requests -------------------#
-      
-      for req_head in req_headers[1:]:
-        req_head_name = req_head.split(': ')[0]
-        # mira si ya existe ese header en el dict
-        if req_head_name in self.req_header_dict:
-          if host not in self.req_header_dict[req_head_name]:
-            self.req_header_dict[req_head_name].append(host)
-        # si no existe el header crea la primera entrada
-        else:
-          self.req_header_dict[req_head_name] = [host]
- 
-      # anade a otra table las lineas que iran en la extension, poniendo celdas vacias en el header name para no repetir cuando hay varios host con el mismo header
-      # ----------------- responses ---------------#
-      response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
-      resp_headers = response.split('\r\n')
-      for resp_head in resp_headers[1:]:   
-        resp_head_name = resp_head.split(': ')[0]
-        if resp_head_name in self.resp_header_dict:
-          if host not in self.resp_header_dict[resp_head_name]:
-            self.resp_header_dict[resp_head_name].append(host)
-        else:
-          self.resp_header_dict[resp_head_name] = [host] 
-    
+      # Sometimes some strange errors happen for some requests, with this we just skip them. 
+      '''algunas fallan en algun punto de aqui dentro'''
+      try:
+        request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+        req_headers = request.split('\r\n')
+
+        # -------- find the host for every request --------#
+        host = self.find_host(req_headers)
+
+        if (host, req_headers[0]) not in host_endpoint: #si encuentro el index del history meterlo en la siguiente linea
+          host_endpoint.append((host, req_headers[0]))
+        # -------------------- requests -------------------#
+
+        for req_head in req_headers[1:]:
+          req_head_name = req_head.split(': ')[0]
+          # mira si ya existe ese header en el dict
+          if req_head_name in self.req_header_dict:
+            if host not in self.req_header_dict[req_head_name]:
+              self.req_header_dict[req_head_name].append(host)
+          # si no existe el header crea la primera entrada
+          else:
+            self.req_header_dict[req_head_name] = [host]
+  
+        # anade a otra table las lineas que iran en la extension, poniendo celdas vacias en el header name para no repetir cuando hay varios host con el mismo  header
+        # ----------------- responses ---------------#
+        response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+        resp_headers = response.split('\r\n')
+        for resp_head in resp_headers[1:]:   
+          resp_head_name = resp_head.split(': ')[0]
+          if resp_head_name in self.resp_header_dict:
+            if host not in self.resp_header_dict[resp_head_name]:
+              self.resp_header_dict[resp_head_name].append(host)
+          else:
+            self.resp_header_dict[resp_head_name] = [host] 
+      except:
+        request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+        req_headers = request.split('\r\n')
     # el siguiente ya contiene toda la history, no pensar en que vienen otras request luego, ya estan todas
+    
     req_keys = sorted(list(self.req_header_dict.keys()))
     resp_keys = sorted(list(self.resp_header_dict.keys()))
 
+    
     k2 = 0 # se usa para meter en el output file los titulos de request y response
     for keys in [req_keys, resp_keys]: # seguro que esto hace lo que debe? es un array de 2 arrays, no uno solo con todas las keys, ok, creo que esto lo puse asi para no duplicar el bloque de abajo y hacer lo mismo para requests y responses con este for sin duplicar codigo, era por eso, 100% seguro
       
