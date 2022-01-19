@@ -403,8 +403,66 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.advanced_config_panel.toFront()
     self.advanced_config_panel.setAlwaysOnTop(True)
     self.advanced_config_panel.setLayout(FlowLayout())
-    self.advanced_config_panel.setSize(260, 400)
+    self.advanced_config_panel.setSize(800, 600)
     self.advanced_config_panel.setLocationRelativeTo(None)    
+
+    # --------------------- Theme selection ------------------------#
+    
+    self.theme_model = DefaultComboBoxModel()
+    self.theme_model.addElement("Dark")
+    self.theme_model.addElement("Light")
+    theme_selector = JComboBox(self.theme_model)
+    # ----------------------------------------------------------------#
+
+
+
+    # --------------------- Headers selection ------------------------#
+    c = GridBagConstraints()
+    c.fill = GridBagConstraints.HORIZONTAL
+    self.security_headers_table = JTable()
+    security_headers_tab = JPanel(GridBagLayout()) 
+    security_headers_tab.add(JScrollPane(self.security_headers_table), c)
+
+    self.dangerous_headers_table = JTable()
+    dangerous_headers_tab = JPanel(GridBagLayout()) 
+    dangerous_headers_tab.add(JScrollPane(self.dangerous_headers_table), c)
+
+    self.potentially_dangerous_headers_table = JTable()
+    potentially_dangerous_headers_tab = JPanel(GridBagLayout()) 
+    potentially_dangerous_headers_tab.add(JScrollPane(self.potentially_dangerous_headers_table), c)
+
+    self.tabs = JTabbedPane() 
+    self.tabs.addTab('Security headers', security_headers_tab)
+    self.tabs.addTab('Dangerous headers', dangerous_headers_tab)
+    self.tabs.addTab('Potentially dangerous headers', potentially_dangerous_headers_tab)
+    # ----------------------------------------------------------------#
+    
+
+
+    # --------------------- Main tabs --------------------------------#
+    main_panel = JPanel(GridBagLayout())
+    headers_critieria_panel = JPanel()
+    theme_panel = JPanel()
+    self.main_tabs = JTabbedPane() 
+    self.main_tabs.addTab('Configure headers criteria', headers_critieria_panel)
+    self.main_tabs.addTab('Theme', theme_panel)
+    main_panel.add(self.main_tabs, c)
+    self.advanced_config_panel.add(main_panel)
+
+
+
+    # ----------------------------------------------------------------#
+
+
+
+    # ------------------ Add contents to main tabs -------------------#
+    headers_critieria_panel.add(self.tabs)
+    theme_panel.add(theme_selector)
+    
+
+    # ----------------------------------------------------------------#
+
+
     return
 
   def show_advanced_config(self, event):
@@ -1723,7 +1781,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     y_pos += 1
     c.gridy = y_pos
     but = JButton("submit", actionPerformed = self.pullRequest)
-    but.setToolTipText("Click to generate a new entry. Please, submit it to @dh0ck or create a pull request to XXX. It will be reviewed before approval. Thanks for contributing!!!");
+    but.setToolTipText("Click to generate a new entry. Please, submit it to @dh0ck or create a pull request to XXX. It will be reviewed before approval. Thanks for contributing!!!")
     panelTab3.add(but, c)
 
     # ========================== show entry to be submitted ============================== #
