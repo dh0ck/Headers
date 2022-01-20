@@ -219,6 +219,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         #self.preset_filters_config_value = value
       elif feature == "UI_theme":
         self.UI_theme = value
+        self.config_dict[feature] = value
     f.close()
     f = open('security_headers.txt','r')
     self.total_security_headers = len(f.readlines())
@@ -1160,8 +1161,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
     self.preset_filters = DefaultComboBoxModel()
-    self.preset_filters.addElement("Request + Response")
     self.preset_filters.addElement("Request + Response + <meta>")
+    self.preset_filters.addElement("Request + Response")
     self.preset_filters.addElement("In scope only (se puede acceder al scope???)")
     self.preset_filters.addElement("Security headers only")
     self.preset_filters.addElement("Potentially dangerous headers only")
@@ -1294,17 +1295,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.splt_3.setDividerLocation(550)
 
     self.splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.splt_3)#self.scroll_summary)
-    #self.splt_2.setDividerLocation(300)
 
     self.splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), self.splt_2) 
-    #self.splt_1.setDividerLocation(500)
     panel.add(self.splt_1, c)
 
     # ================== Add saving to file ===================== #
     JPanel2 = JPanel(GridBagLayout())
 
     c = GridBagConstraints()
-    c.gridx = 0 # third column
+    c.gridx = 0 
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
     self.save_but = JButton('<html><b><font color="white">Save headers</font></b></html>', actionPerformed = self.save_json)
@@ -1318,7 +1317,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_but.setBackground(Color(10,101,247))
     JPanel2.add( self.save_but, c )
 
-    #c = GridBagConstraints()
     c.gridx += 1
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
@@ -1339,16 +1337,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_ComboBox = JComboBox(self.save_format)
     JPanel2.add( self.save_ComboBox, c )
 
-    #c = GridBagConstraints()
-    c.gridx += 1 # third column
+    c.gridx += 1 
     c.gridy = y_pos
     self.choose_file_but = JButton('<html><b><font color="white">Choose output file</font></b></html>', actionPerformed = self.choose_output_file)
     JPanel2.add( self.choose_file_but, c )
 
-    #c = GridBagConstraints() #ojo, parece que esto solo hay que ponerlo una vez al principio, comprobar y quitar de donde sobre, hay otras mas arriba descomentadas!!! ejemplo: https://leo.ugr.es/elvira/devel/Tutorial/Java/uiswing/layout/gridbagExample.html
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
-    c.gridx += 1 # third column
+    c.gridx += 1 
     c.gridy = y_pos
     self.save_path = JTextField('Save headers to... (write full path or click "Choose output file". The file will be created)')
     JPanel2.add(self.save_path , c )
@@ -1389,6 +1385,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     history2 = self._callbacks.getProxyHistory()
     self.meta_table = []
 
+    keywords = self.filter.getText().lower().split(',')
     for item in history2: 
       ''' This try / except is because for some reason some entries fail somewhere here. also happens for the normal request responses, not only metas'''
       try:
@@ -1408,7 +1405,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             break
       except:
         pass
-    
+      
     self.for_table_meta = [] # the two columns that appear on the meta tag in the left table
     meta_header_item = []
     for metax in self.meta_table:
@@ -1425,26 +1422,29 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           self.for_table_meta.append(val) 
           meta_header_item.append(meta_values[1])
 
-    
+
     self.for_table_meta_uniques = sorted([list(x) for x in list({tuple(i) for i in self.for_table_meta})]) 
 
-    keywords = self.filter.getText().lower().split(',')
     self.meta_headers_already_in_table = []
-    
+
     last_meta = ''
     k = 0
     for table_entry_meta in self.for_table_meta_uniques:
-      if last_meta != table_entry_meta[0] and k > 0:
-        self.model_tab_meta.insertRow(self.last_row_meta, ['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>', '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])
-        self.last_row_meta += 1
+      for keyword in keywords:
+        # Apply filter to meta headers
+        if keyword.lower().strip() in table_entry_meta[0] or keyword.lower().strip() in table_entry_meta[1] or self.filter.getText() == "Or enter keywords (separated by a comma)" or self.filter.getText() == "":
 
-      if table_entry_meta[0] not in self.meta_headers_already_in_table:
-        self.meta_headers_already_in_table.append(table_entry_meta[0])
-        self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
-        self.last_row_meta += 1
-      else:
-        self.model_tab_meta.insertRow(self.last_row_meta, ["",table_entry_meta[1]])
-        self.last_row_meta += 1
+          if last_meta != table_entry_meta[0] and k > 0:
+            self.model_tab_meta.insertRow(self.last_row_meta, ['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>',     '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])
+            self.last_row_meta += 1
+
+          if table_entry_meta[0] not in self.meta_headers_already_in_table:
+            self.meta_headers_already_in_table.append(table_entry_meta[0])
+            self.model_tab_meta.insertRow(self.last_row_meta, table_entry_meta)
+            self.last_row_meta += 1
+          else:
+            self.model_tab_meta.insertRow(self.last_row_meta, ["",table_entry_meta[1]])
+            self.last_row_meta += 1
       last_meta = table_entry_meta[0]
       k += 1
 
@@ -1455,7 +1455,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
     self.clear_table()
     
-    if True:
+    #if True:
+    if self.preset_filters.getSelectedItem() == "Request + Response + <meta>":
       self.get_meta_tags() 
 
     global history1
@@ -1531,11 +1532,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
         for host in self.header_dict[key]:
           # Apply the filter:
-
           keywords = self.filter.getText().lower().split(',')
 
           for keyword in keywords:
-            if keyword.strip() in host.lower() or keyword in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
+            if keyword.lower().strip() in host.lower() or keyword.lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
               if [key, host] not in self.for_table:
                 if k1 == 0 and key not in self.headers_already_in_table:
                   self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host]) # used for displaying data in Host-Header table
@@ -1568,8 +1568,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if self.preset_filters.getSelectedItem() != self.config_dict["last_filter_type"]:
       self.config_dict["last_filter_type"] = self.preset_filters.getSelectedItem()
       self.update_config()
-    
-    
 
     return
 
