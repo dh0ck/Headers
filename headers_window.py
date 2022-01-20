@@ -158,6 +158,7 @@ class IssueTableMouseListener_Tab(IssueTableMouseListener):
         
         burp_extender_instance.selected_host = clicked_host
         burp_extender_instance.selected_header = header_value#header # este lo settea ok para la de endpoints
+        burp_extender_instance.endpoint_table1 = endpoint_table
         burp_extender_instance.update_endpoints(endpoint_table)
         
 class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
@@ -1029,6 +1030,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.clicked_endpoint(self.table_unique_endpoints, False)
     return
 
+  def call_filter_endpoints(self, event):
+    self.update_endpoints(self.endpoint_table1)
+    return
+
   def update_endpoints(self, endpoint_table):
     """Update the "Unique endpoints" table and the "All endpoints" table when a row in the Header-Host table (at the left side of the extension tab) is clicked. The endpoint tables show all the endpoints that exist in the Burp history for which the Host request header is the one clicked on the Header-Host table."""
 
@@ -1036,45 +1041,58 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.model_all_endpoints.setRowCount(0)
     self.unique_entries = []
 
+
+
+    #meter filtro de endpoints
+    keywords = self.filter_endpoints.getText().lower().split(',')
+
+    
     for entry in endpoint_table:
-      self.model_all_endpoints.addRow(entry)
+      for keyword in keywords:
+        print('----')
+        print (keyword.lower().strip())
+        print(entry[0].lower())
+        if keyword.lower().strip() in entry[0].lower() or self.filter_endpoints.getText() == "To filter endpoints enter keywords (separated by a comma)" or self.filter_endpoints.getText() == "":
+          self.model_all_endpoints.addRow(entry)
 
     for entry in endpoint_table:
       entry[0] = self.apply_regex(entry[0])
+      for keyword in keywords:
+        if keyword.lower().strip() in entry[0].lower() or self.filter_endpoints.getText() == "To filter endpoints enter keywords (separated by a comma)" or self.filter_endpoints.getText() == "":
         
-      if entry not in self.unique_entries:
-        
-        self.unique_entries.append(entry)
-        #coger el host del elemento clickado en la tabla de la izda
-        try:
-          host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
-        except:
-          host = self.table_tab_resp.getModel().getDataVector().elementAt(self.table_tab_resp.getSelectedRow())[1]
-        colors = self.to_get_colors(entry[0], host, True)  #colors es un dict
+          if entry not in self.unique_entries:
 
-        
-        symbols_color = {}
-        for color in colors.keys():
-          
-          if color == "security":
-            total = self.total_security_headers
-          elif color == "potential":
-            total = self.total_potential_headers
-          elif color == "dangerous":
-            total = self.total_dangerous_headers
-          symbols_color[color] = self.ColorScore(colors[color], total, color)
+            self.unique_entries.append(entry)
+            #coger el host del elemento clickado en la tabla de la izda
+            try:
+              host = self.table_tab_req.getModel().getDataVector().elementAt(self.table_tab_req.getSelectedRow())[1]
+            except:
+              host = self.table_tab_resp.getModel().getDataVector().elementAt(self.table_tab_resp.getSelectedRow())[1]
+            colors = self.to_get_colors(entry[0], host, True)  #colors es un dict
 
-        symbols_string = '<b><font color="{0}">[{1}+]</font><font color="{2}">[{3}?]</font><font color="{4}">[{5}X]</font></b> - '.format(symbols_color["security"], colors["security"], symbols_color["potential"], colors["potential"], symbols_color["dangerous"], colors["dangerous"])
-        #symbols_string = '<b><font color="{0}">[+]</font><font color="{1}">[?]</font><font color="{2}">[X]</font></b> - '.format(symbols_color["security"], symbols_color["potential"], symbols_color["dangerous"])
-        #print(symbols_string +entry[0]+'</html>')
 
-        ###################################
-        #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
-        #print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
-        self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
-        print( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
-        #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
-        #self.model_unique_endpoints.addRow( [ entry[0] ])
+            symbols_color = {}
+            for color in colors.keys():
+
+              if color == "security":
+                total = self.total_security_headers
+              elif color == "potential":
+                total = self.total_potential_headers
+              elif color == "dangerous":
+                total = self.total_dangerous_headers
+              symbols_color[color] = self.ColorScore(colors[color], total, color)
+
+            symbols_string = '<b><font color="{0}">[{1}+]</font><font color="{2}">[{3}?]</font><font color="{4}">[{5}X]</font></b> - '.format(symbols_color   ["security"], colors["security"], symbols_color["potential"], colors["potential"], symbols_color["dangerous"], colors["dangerous"])
+            #symbols_string = '<b><font color="{0}">[+]</font><font color="{1}">[?]</font><font color="{2}">[X]</font></b> - '.format(symbols_color["security"],    symbols_color["potential"], symbols_color["dangerous"])
+            #print(symbols_string +entry[0]+'</html>')
+
+            ###################################
+            #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
+            #print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
+            self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
+            print( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
+            #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
+            #self.model_unique_endpoints.addRow( [ entry[0] ])
         
 
     self.table_unique_endpoints.setRowSelectionInterval(0,0) 
@@ -1167,27 +1185,31 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.preset_filters.addElement("Security headers only")
     self.preset_filters.addElement("Potentially dangerous headers only")
     self.preset_filters.addElement("Dangerous or unnecessary headers only")
-    c = GridBagConstraints()
+
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
-    c.gridx = 1 
-    c.gridy = y_pos
+    c.gridx += 1 
     self.filterComboBox = JComboBox(self.preset_filters)
     JPanel1.add(self.filterComboBox , c )
 
-    c = GridBagConstraints()
-    c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 8
-    c.gridx = 2 
-    c.gridy = y_pos
-    self.filter = JTextField('Or enter keywords (separated by a comma)')
+    c.gridx += 1 
+    self.filter = JTextField('To filter headers enter keywords (separated by a comma)')
+    dim = Dimension(500,23)
+    self.filter.setPreferredSize(dim)
     self.filter.addActionListener(self.filter_entries)
     JPanel1.add(self.filter , c )
 
-    c = GridBagConstraints()
-    c.fill = GridBagConstraints.HORIZONTAL
+    c.weightx = 8
+    c.gridx += 1 
+    self.filter_endpoints = HintTextField('To filter endpoints enter keywords (separated by a comma)')
+    dim = Dimension(500,23)
+    self.filter_endpoints.setPreferredSize(dim)
+    self.filter_endpoints.addActionListener(self.call_filter_endpoints)
+    JPanel1.add(self.filter_endpoints , c )
+
     c.weightx = 0
-    c.gridx = 3 
+    c.gridx += 1
     c.gridy = y_pos
     a=os.getcwd() + '\\gear_2.png'
     image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
@@ -1262,6 +1284,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # ================== Add endpoints table ===================== #
 
+
     self.model_unique_endpoints = IssueTableModel([[""]], ["Unique endpoints for selected host"])
     self.table_unique_endpoints = IssueTable(self.model_unique_endpoints, "endpoints")
 
@@ -1273,6 +1296,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.endpoint_tabs.addTab('Unique endpoints', JScrollPane(self.table_unique_endpoints))
     self.endpoint_tabs.addTab('All endpoints', JScrollPane(self.table_all_endpoints))
     
+
     self.header_summary = JEditorPane("text/html", "")
     self.scroll_summary = JScrollPane(self.header_summary)
 
@@ -1432,7 +1456,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for table_entry_meta in self.for_table_meta_uniques:
       for keyword in keywords:
         # Apply filter to meta headers
-        if keyword.lower().strip() in table_entry_meta[0] or keyword.lower().strip() in table_entry_meta[1] or self.filter.getText() == "Or enter keywords (separated by a comma)" or self.filter.getText() == "":
+        if keyword.lower().strip() in table_entry_meta[0] or keyword.lower().strip() in table_entry_meta[1] or self.filter.getText() == "To filter headers enter keywords (separated by a comma)" or self.filter.getText() == "":
 
           if last_meta != table_entry_meta[0] and k > 0:
             self.model_tab_meta.insertRow(self.last_row_meta, ['<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>',     '<html><b><font color="{}">'.format(self.color1) + '-' * 300 + '</font></b></html>' * 300])
@@ -1535,7 +1559,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           keywords = self.filter.getText().lower().split(',')
 
           for keyword in keywords:
-            if keyword.lower().strip() in host.lower() or keyword.lower() in key.lower() or self.filter.getText() == "Or enter keywords (separated by a comma)":
+            if keyword.lower().strip() in host.lower() or keyword.lower() in key.lower() or self.filter.getText() == "To filter headers enter keywords (separated by a comma)":
               if [key, host] not in self.for_table:
                 if k1 == 0 and key not in self.headers_already_in_table:
                   self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host]) # used for displaying data in Host-Header table
