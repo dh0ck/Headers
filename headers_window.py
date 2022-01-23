@@ -7,8 +7,9 @@ from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayo
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
+from java.lang import Boolean, String
 from java.awt.event.MouseEvent import getPoint
-from java.awt.event import MouseListener
+from java.awt.event import MouseListener, FocusListener
 
 
 burp_extender_instance = "" # variable global que sera el instance de bupr extender, para acceder a los valores de la instancia de IBurpExtender que burp crea, pero desde fuera, sobre todo para cambiar con clicks la tabla de endpoints
@@ -17,6 +18,13 @@ host_endpoint = [] #se rellena al darle a filter en la tab, pero habra que arreg
 endpoint_table = []
 endpoint_table_meta = []
 selected_header_name = ""
+
+class ConfigTableModel(DefaultTableModel):
+  def __init__(self, data, headings):
+    DefaultTableModel.__init__(self, data, headings)
+  
+  def getColumnClass(self, col):
+    return [Boolean, String][col]
 
 class IssueTableModel(DefaultTableModel):
     """Extends the DefaultTableModel to make it readonly."""
@@ -195,6 +203,44 @@ class IssueTable(JTable):
           self.addMouseListener(IssueTableMouseListener_Window())
         elif table_type == "endpoints":
           self.addMouseListener(IssueTableMouseListener_Endpoints())
+        elif table_type == "config_headers":
+          pass
+
+
+#este es para los filtros, que al borrar el texto se ponga la hint, pero no funciona, mejor pasar de ello
+class HintTextField(JTextField, FocusListener):
+
+  def __init__(self, hint, showingHint):
+    print('xxx 1')
+    self.hint = hint
+    self.showingHint = showingHint
+
+  def HintTextField(self, hint):
+    print('xxx 2')
+    self.hint = hint
+    self.showingHint = True
+    super().addFocusListener(self)
+  
+
+  def focusGained(self, event): 
+    print('xxx 3')
+    if(self.getText().isEmpty()): 
+      super().setText("");
+      self.showingHint = False;
+    
+  
+  def focusLost(self, event): 
+    print('xxx 4')
+    if(self.getText().isEmpty()):
+      super().setText(hint)
+      self.showingHint = True
+    
+  def getText(self): 
+    print('xxx 4')
+    #return showingHint ? "" : super().getText()
+    return "" if self.showingHint else super().getText()
+  
+
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   """Main class of the Headers extension, instantiated by Burp."""
@@ -263,19 +309,28 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f = open('dangerous_headers.txt')
     self.dangerous_headers = []
     for line in f.readlines():
-      self.dangerous_headers.append(line.strip('\n'))
+      active = line.split(' ')[0]
+      if active == '1':
+        header = line.split(' ')[1]
+        self.dangerous_headers.append(header.strip('\n'))
     f.close()
 
     f = open('security_headers.txt')
     self.security_headers = []
     for line in f.readlines():
-      self.security_headers.append(line.strip('\n'))
+      active = line.split(' ')[0]
+      if active == '1':
+        header = line.split(' ')[1]
+        self.security_headers.append(header.strip('\n'))
     f.close()
 
     f = open('potentially_dangerous_headers.txt')
     self.potentially_dangerous_headers = []
     for line in f.readlines():
-      self.potentially_dangerous_headers.append(line.strip('\n'))
+      active = line.split(' ')[0]
+      if active == '1':
+        header = line.split(' ')[1]
+        self.potentially_dangerous_headers.append(header.strip('\n'))
     f.close()
 
   def create_extra_info_window(self):
@@ -404,7 +459,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.advanced_config_panel = JFrame("Advanced configuration")
     self.advanced_config_panel.toFront()
     self.advanced_config_panel.setAlwaysOnTop(True)
-    self.advanced_config_panel.setLayout(FlowLayout())
+    #self.advanced_config_panel.setLayout(FlowLayout())
     self.advanced_config_panel.setSize(800, 600)
     self.advanced_config_panel.setLocationRelativeTo(None)    
 
@@ -419,19 +474,69 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
     # --------------------- Headers selection ------------------------#
+
+
+    table_config_security = []
+    table_config_potentially_dangerous = []
+    table_config_dangerous = []
+
+    f = open('security_headers.txt','r')
+    for line in f.readlines():
+      active = line.split(' ')[0]
+      if active == '1':
+        table_config_security.append([True, line.split(' ')[1].strip('\n')])
+      else: 
+        table_config_security.append([False, line.split(' ')[1].strip('\n')])
+
+    f = open('potentially_dangerous_headers.txt','r')
+    for line in f.readlines():
+      active = line.split(' ')[0]
+      if active == '1':
+        table_config_potentially_dangerous.append([True, line.split(' ')[1].strip('\n')])
+      else: 
+        table_config_potentially_dangerous.append([False, line.split(' ')[1].strip('\n')])
+
+    f = open('dangerous_headers.txt','r')
+    for line in f.readlines():
+      active = line.split(' ')[0]
+      if active == '1':
+        table_config_dangerous.append([True, line.split(' ')[1].strip('\n')])
+      else: 
+        table_config_dangerous.append([False, line.split(' ')[1].strip('\n')])
+
+    column_names = ("Use?", "Header name")
+
+    self.model_tab_config_security = ConfigTableModel(table_config_security, column_names)
+    self.table_tab_config_security = JTable(self.model_tab_config_security)
+
+    self.model_tab_config_potentially_dangerous = ConfigTableModel(table_config_potentially_dangerous, column_names)
+    self.table_tab_config_potentially_dangerous = JTable(self.model_tab_config_potentially_dangerous)
+
+    self.model_tab_config_dangerous = ConfigTableModel(table_config_dangerous, column_names)
+    self.table_tab_config_dangerous = JTable(self.model_tab_config_dangerous)
+    
+    self.table_tab_config_security.getColumnModel().getColumn(0).setPreferredWidth(50)
+    self.table_tab_config_security.getColumnModel().getColumn(1).setPreferredWidth(400)
+
+    self.table_tab_config_potentially_dangerous.getColumnModel().getColumn(0).setPreferredWidth(50)
+    self.table_tab_config_potentially_dangerous.getColumnModel().getColumn(1).setPreferredWidth(400)
+
+    self.table_tab_config_dangerous.getColumnModel().getColumn(0).setPreferredWidth(50)
+    self.table_tab_config_dangerous.getColumnModel().getColumn(1).setPreferredWidth(400)
+
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
-    self.security_headers_table = JTable()
+
     security_headers_tab = JPanel(GridBagLayout()) 
-    security_headers_tab.add(JScrollPane(self.security_headers_table), c)
+    security_headers_tab.add(JScrollPane(self.table_tab_config_security), c)
 
-    self.dangerous_headers_table = JTable()
     dangerous_headers_tab = JPanel(GridBagLayout()) 
-    dangerous_headers_tab.add(JScrollPane(self.dangerous_headers_table), c)
+    dangerous_headers_tab.add(JScrollPane(self.table_tab_config_dangerous), c)
 
-    self.potentially_dangerous_headers_table = JTable()
     potentially_dangerous_headers_tab = JPanel(GridBagLayout()) 
-    potentially_dangerous_headers_tab.add(JScrollPane(self.potentially_dangerous_headers_table), c)
+    potentially_dangerous_headers_tab.add(JScrollPane(self.table_tab_config_potentially_dangerous), c)
+
+
 
     self.tabs = JTabbedPane() 
     self.tabs.addTab('Security headers', security_headers_tab)
@@ -924,7 +1029,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         f.write("{\n")
         all_hosts = [self.host_header_table[i][1] for i in range(len(self.host_header_table))]
         #all_hosts.remove('') #for some reason this is not removing the empty element '', so I leave it commented and subtract 2 instead of 1 from the lenght in the if k < len... a few lines below
-        print(set(all_hosts))
+        #print(set(all_hosts))
         for line in self.host_header_table:
           
           [host1, unique_host1, header] = line
@@ -1049,9 +1154,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     for entry in endpoint_table:
       for keyword in keywords:
-        print('----')
+        #print('----')
         print (keyword.lower().strip())
-        print(entry[0].lower())
+        #print(entry[0].lower())
         if keyword.lower().strip() in entry[0].lower() or self.filter_endpoints.getText() == "To filter endpoints enter keywords (separated by a comma)" or self.filter_endpoints.getText() == "":
           self.model_all_endpoints.addRow(entry)
 
@@ -1090,7 +1195,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
             #print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
             self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
-            print( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
+            #print( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
             #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
             #self.model_unique_endpoints.addRow( [ entry[0] ])
         
@@ -1202,7 +1307,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     c.weightx = 8
     c.gridx += 1 
-    self.filter_endpoints = HintTextField('To filter endpoints enter keywords (separated by a comma)')
+    # en este y el anterior intentaba meter las hints en la textbox con la clase de arriba, pero no va y es complicado, la converti de java y seguro que falta algo
+    #self.filter_endpoints = HintTextField('To filter endpoints enter keywords (separated by a comma)', True)
+    self.filter_endpoints = JTextField('To filter endpoints enter keywords (separated by a comma)')
     dim = Dimension(500,23)
     self.filter_endpoints.setPreferredSize(dim)
     self.filter_endpoints.addActionListener(self.call_filter_endpoints)

@@ -1,2 +1,2 @@
-x-powered-by
-server
+1 x-powered-by
+1 server
