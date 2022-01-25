@@ -208,37 +208,37 @@ class IssueTable(JTable):
 
 
 #este es para los filtros, que al borrar el texto se ponga la hint, pero no funciona, mejor pasar de ello
-class HintTextField(JTextField, FocusListener):
+'''class HintTextField(JTextField, FocusListener):
 
   def __init__(self, hint, showingHint):
-    print('xxx 1')
+    #print('xxx 1')
     self.hint = hint
     self.showingHint = showingHint
 
   def HintTextField(self, hint):
-    print('xxx 2')
+    #print('xxx 2')
     self.hint = hint
     self.showingHint = True
     super().addFocusListener(self)
   
 
   def focusGained(self, event): 
-    print('xxx 3')
+    #print('xxx 3')
     if(self.getText().isEmpty()): 
       super().setText("");
       self.showingHint = False;
     
   
   def focusLost(self, event): 
-    print('xxx 4')
+    #print('xxx 4')
     if(self.getText().isEmpty()):
       super().setText(hint)
       self.showingHint = True
     
   def getText(self): 
-    print('xxx 4')
+    #print('xxx 4')
     #return showingHint ? "" : super().getText()
-    return "" if self.showingHint else super().getText()
+    return "" if self.showingHint else super().getText()'''
   
 
 
@@ -306,31 +306,61 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f.close()
 
   def read_headers(self):
-    f = open('dangerous_headers.txt')
-    self.dangerous_headers = []
-    for line in f.readlines():
-      active = line.split(' ')[0]
-      if active == '1':
-        header = line.split(' ')[1]
-        self.dangerous_headers.append(header.strip('\n'))
+    """ Read the values currently checked in the advanced config tables and use them in the future """
+
+    self.table_config_security = []
+    self.table_config_dangerous = []
+    self.table_config_potentially_dangerous = []
+    
+
+    for i in range(self.initial_count_security_headers):
+      if self.model_tab_config_security.getValueAt(i,0):
+        self.table_config_security.append(self.model_tab_config_security.getValueAt(i,1)) 
+
+    for i in range(self.initial_count_dangerous_headers):
+      if self.model_tab_config_dangerous.getValueAt(i,0):
+        self.table_config_dangerous.append(self.model_tab_config_dangerous.getValueAt(i,1)) 
+    
+    for i in range(self.initial_count_potentially_dangerous_headers):
+      if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
+        self.table_config_potentially_dangerous.append(self.model_tab_config_potentially_dangerous.getValueAt(i,1)) 
+
+    self.dangerous_headers = [] 
+    self.security_headers = [] 
+    self.potentially_dangerous_headers = [] 
+
+    for line in self.table_config_security:
+        self.security_headers.append(line.strip('\n'))
+    
+    for line in self.table_config_dangerous:
+        self.dangerous_headers.append(line.strip('\n'))
+    
+    for line in self.table_config_potentially_dangerous:
+        self.potentially_dangerous_headers.append(line.strip('\n'))
+
+  def make_chosen_headers_permanent(self, event):
+    f = open("security_headers.txt","w")
+    for i in range(self.initial_count_security_headers):
+      if self.model_tab_config_security.getValueAt(i,0):
+        f.write("1 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
+      else:
+        f.write("0 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
     f.close()
 
-    f = open('security_headers.txt')
-    self.security_headers = []
-    for line in f.readlines():
-      active = line.split(' ')[0]
-      if active == '1':
-        header = line.split(' ')[1]
-        self.security_headers.append(header.strip('\n'))
+    f = open("dangerous_headers.txt","w")
+    for i in range(self.initial_count_dangerous_headers):
+      if self.model_tab_config_dangerous.getValueAt(i,0):
+        f.write("1 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
+      else:
+        f.write("0 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
     f.close()
-
-    f = open('potentially_dangerous_headers.txt')
-    self.potentially_dangerous_headers = []
-    for line in f.readlines():
-      active = line.split(' ')[0]
-      if active == '1':
-        header = line.split(' ')[1]
-        self.potentially_dangerous_headers.append(header.strip('\n'))
+    
+    f = open("potentially_dangerous_headers.txt","w")
+    for i in range(self.initial_count_potentially_dangerous_headers):
+      if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
+        f.write("1 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
+      else:
+        f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
     f.close()
 
   def create_extra_info_window(self):
@@ -476,43 +506,43 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     # --------------------- Headers selection ------------------------#
 
 
-    table_config_security = []
-    table_config_potentially_dangerous = []
-    table_config_dangerous = []
+    self.table_config_security = []
+    self.table_config_potentially_dangerous = []
+    self.table_config_dangerous = []
 
     f = open('security_headers.txt','r')
     for line in f.readlines():
       active = line.split(' ')[0]
       if active == '1':
-        table_config_security.append([True, line.split(' ')[1].strip('\n')])
+        self.table_config_security.append([True, line.split(' ')[1].strip('\n')])
       else: 
-        table_config_security.append([False, line.split(' ')[1].strip('\n')])
+        self.table_config_security.append([False, line.split(' ')[1].strip('\n')])
 
     f = open('potentially_dangerous_headers.txt','r')
     for line in f.readlines():
       active = line.split(' ')[0]
       if active == '1':
-        table_config_potentially_dangerous.append([True, line.split(' ')[1].strip('\n')])
+        self.table_config_potentially_dangerous.append([True, line.split(' ')[1].strip('\n')])
       else: 
-        table_config_potentially_dangerous.append([False, line.split(' ')[1].strip('\n')])
+        self.table_config_potentially_dangerous.append([False, line.split(' ')[1].strip('\n')])
 
     f = open('dangerous_headers.txt','r')
     for line in f.readlines():
       active = line.split(' ')[0]
       if active == '1':
-        table_config_dangerous.append([True, line.split(' ')[1].strip('\n')])
+        self.table_config_dangerous.append([True, line.split(' ')[1].strip('\n')])
       else: 
-        table_config_dangerous.append([False, line.split(' ')[1].strip('\n')])
+        self.table_config_dangerous.append([False, line.split(' ')[1].strip('\n')])
 
     column_names = ("Use?", "Header name")
 
-    self.model_tab_config_security = ConfigTableModel(table_config_security, column_names)
+    self.model_tab_config_security = ConfigTableModel(self.table_config_security, column_names)
     self.table_tab_config_security = JTable(self.model_tab_config_security)
 
-    self.model_tab_config_potentially_dangerous = ConfigTableModel(table_config_potentially_dangerous, column_names)
+    self.model_tab_config_potentially_dangerous = ConfigTableModel(self.table_config_potentially_dangerous, column_names)
     self.table_tab_config_potentially_dangerous = JTable(self.model_tab_config_potentially_dangerous)
 
-    self.model_tab_config_dangerous = ConfigTableModel(table_config_dangerous, column_names)
+    self.model_tab_config_dangerous = ConfigTableModel(self.table_config_dangerous, column_names)
     self.table_tab_config_dangerous = JTable(self.model_tab_config_dangerous)
     
     self.table_tab_config_security.getColumnModel().getColumn(0).setPreferredWidth(50)
@@ -548,10 +578,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # --------------------- Main tabs --------------------------------#
     main_panel = JPanel(GridBagLayout())
-    headers_critieria_panel = JPanel()
+    headers_criteria_panel = JPanel()
     theme_panel = JPanel()
     self.main_tabs = JTabbedPane() 
-    self.main_tabs.addTab('Configure headers criteria', headers_critieria_panel)
+    self.main_tabs.addTab('Configure headers criteria', headers_criteria_panel)
     self.main_tabs.addTab('Theme', theme_panel)
     main_panel.add(self.main_tabs, c)
     self.advanced_config_panel.add(main_panel)
@@ -563,7 +593,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
     # ------------------ Add contents to main tabs -------------------#
-    headers_critieria_panel.add(self.tabs)
+    headers_criteria_panel.add(self.tabs)
+    headers_criteria_panel.add(JButton("Add header to category", actionPerformed = self.add_headers_to_categories))
+    headers_criteria_panel.add(JButton("Make chosen headers permanent", actionPerformed = self.make_chosen_headers_permanent))
     theme_panel.add(theme_selector)
     
 
@@ -575,6 +607,25 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def show_advanced_config(self, event):
     """Show the advanced configuration window when clicking the gear button"""
     self.advanced_config_panel.setVisible(True)
+
+  def get_categories_headers_length(self):
+    """ Get how many headers are in each category when the extension is loaded. Used in read_headers() to tell it how many times it must loop to generate arrays of each category of headers"""
+    f = open('security_headers.txt','r')
+    # the filter in the next line removes all occurences of '', i.e. doesnt consider empty lines for counting the number of headers
+    self.initial_count_security_headers = len(list(filter(('').__ne__, f.readlines())))
+    #self.initial_count_security_headers = len(f.readlines())
+    
+    f.close()
+
+    f = open('dangerous_headers.txt','r')
+    self.initial_count_dangerous_headers= len(list(filter(('').__ne__, f.readlines())))
+    #self.initial_count_dangerous_headers= len(f.readlines())
+    f.close()
+    
+    f = open('potentially_dangerous_headers.txt','r')
+    self.initial_count_potentially_dangerous_headers = len(list(filter(('').__ne__, f.readlines())))
+    #self.initial_count_potentially_dangerous_headers = len(f.readlines())
+    f.close()
 
   def registerExtenderCallbacks(self, callbacks):
     """Import Burp Extender callbacks and execute some preliminary functions for setting up the extension when it's loaded with proper configurations"""
@@ -604,6 +655,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.compile_regex()
     self.create_advanced_config_frame()
     self.create_extra_info_window()
+    self.get_categories_headers_length()
     self.read_headers()
     self.selected_host = ""
     self.selected_header = ""
@@ -702,6 +754,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def extra_symbol(self, head):
     """Creates the extra symbols for security [+], dangerous [X] and potentially dangrous [?] headers that are shown in the request header summary at the right side of the screen."""
+    
+    
+    print('------------------------')
+    print(self.security_headers)
+    print(head)
+    print('------------------------\n\n')
     if head.split(": ")[0].lower() in self.security_headers:
       extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
     elif head.split(": ")[0].lower() in self.dangerous_headers:
@@ -770,6 +828,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def clicked_endpoint(self, tbl, from_click):
     """Fill the summary (panel at the right side of the extension tab) when an endpoint (either from the "Unique endpoints" table or from the "All endpoints table") is clicked. The summary contains the request and response headers, marked with symbols if they are security headers, dangerous headers, or potentially dangerous headers."""
+
+    # update the headers categories to be considered, by looking at the checkboxes in the advanced config table
+    self.read_headers()
 
     if from_click:
       val = tbl.getModel().getDataVector().elementAt(tbl.getSelectedRow())
@@ -869,7 +930,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             resp_head_name = resp_head.split(': ')[0]
             resp_head_value = resp_head.split(': ')[1]
 
-          
+            # highlight the clicked header on the summary 
             if resp_head.split(":")[0] == clicked_header:
               buffer += '<li><b>' + '<font color="{}">'.format(self.color1) + resp_head_name + "</font>" + extra_symbol + '<font color="{}">: </font>'.format(self.color1) + resp_head_value + "</b><br></li>"
             else:
@@ -1225,8 +1286,23 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     filename = self.file_to_add_headers
     text = self.header_to_add.getText()
     f = open(filename,"a")
-    f.write("\n" + text)
+    f.write("\n" + "1 " + text)
     f.close()
+
+    if filename == "security_headers.txt":
+      self.table_config_security.append([True, text])
+      #this should update the table but it doesnt
+      self.model_tab_config_security.fireTableDataChanged()
+
+    elif filename == "dangerous_headers.txt":
+      self.table_config_dangerous.append([True, text])
+      self.model_tab_config_dangerous.fireTableDataChanged()
+
+    elif filename == "potentially_dangerous_headers.txt":
+      self.table_config_potentially_dangerous.append([True, text])
+      self.model_tab_config_potentially_dangerous.fireTableDataChanged()
+
+    
     self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
 
   def add_headers_to_categories(self, event):
@@ -1253,16 +1329,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.added_header_info.setLineWrap(True)
     add_headers_panel.add(JScrollPane(self.added_header_info))
 
-    
-    
-
     add_headers.setSize(400, 220)
     add_headers.add(add_headers_panel)
     add_headers.setLocationRelativeTo(None)
     add_headers.setVisible( True )
     add_headers.toFront()
     add_headers.setAlwaysOnTop(True)
-
     
     return
     
@@ -1410,16 +1482,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.summary_summary = JEditorPane("text/html", "")
     self.scroll_summary_summary = JScrollPane(self.summary_summary)
 
-    self.checkbox_panel = JPanel()
-    self.checkbox_panel.setLayout(FlowLayout())
-    self.checkbox_panel.add(JCheckBox("Security headers"))
-    self.checkbox_panel.add(JCheckBox("Potentially dangerous headers"))
-    self.checkbox_panel.add(JCheckBox("Dangerous headers"))
-    self.checkbox_panel.add(JButton("Add new headers", actionPerformed = self.add_headers_to_categories))
 
     self.summary_panel = JPanel()
     self.summary_panel.setLayout(BoxLayout(self.summary_panel,BoxLayout.Y_AXIS))
-    ###self.summary_panel.add(self.checkbox_panel) """  !!!!!!!!!!11 este impedia resizear !!!!!!!!!!! """
     self.summary_panel.add(self.summary_summary)
 
     self.splt_3 = JSplitPane(JSplitPane.VERTICAL_SPLIT, self.scroll_summary, self.summary_panel)
@@ -1585,6 +1650,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def filter_entries(self, event):
     """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
     self.clear_table()
+    self.read_headers()
     
     #if True:
     if self.preset_filters.getSelectedItem() == "Request + Response + <meta>":

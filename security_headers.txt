@@ -1,9 +1,9 @@
 1 cachecontrol
 1 content-security-policy
 1 strict-transport-security
-0 publickeypinning
+1 publickeypinning
 1 x-xss-protection
-0 x-frame-options
+1 x-frame-options
 1 x-content-type-options
 1 feature-policy
 1 referrer-policy
