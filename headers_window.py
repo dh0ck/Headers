@@ -1351,23 +1351,20 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if filename == "security_headers.txt":
       self.table_config_security.append([True, text])
       self.model_tab_config_security.setRowCount(0)
-      #self.model_tab_config_security = ConfigTableModel(self.table_config_security, self.config_column_names)
-      
       for line in self.table_config_security:
         self.model_tab_config_security.addRow(line)
-      self.table_tab_config_security = JTable(self.model_tab_config_security)
-      print('777')
-      self.model_tab_config_security.fireTableDataChanged()
-      print('999')
 
     elif filename == "dangerous_headers.txt":
-      self.table_tab_config_dangerous.append([True, text])
-      self.model_tab_config_dangerous.fireTableDataChanged()
+      self.table_config_dangerous.append([True, text])
+      self.model_tab_config_dangerous.setRowCount(0)
+      for line in self.table_config_dangerous:
+        self.model_tab_config_dangerous.addRow(line)
 
     elif filename == "potentially_dangerous_headers.txt":
-      self.table_tab_config_potentially_dangerous.append([True, text])
-      self.model_tab_config_potentially_dangerous.fireTableDataChanged()
-
+      self.table_config_potentially_dangerous.append([True, text])
+      self.model_tab_config_potentially_dangerous.setRowCount(0)
+      for line in self.table_config_potentially_dangerous:
+        self.model_tab_config_potentially_dangerous.addRow(line)
     
     self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
 
@@ -1385,8 +1382,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.addRB( add_headers_panel, bg, 'Dangerous or verbose headers' )
     add_headers_panel.add( JLabel( ' ' ) )
     add_headers_panel.add( JLabel( 'New header to be added:' ) )
+
+    new_header_textfield = JTextField("New header")
+    new_header_textfield.addActionListener(self.add_header_to_file)
+    self.header_to_add = add_headers_panel.add(new_header_textfield)
     
-    self.header_to_add = add_headers_panel.add(JTextField("New header"))
+
     self.add_header_button = add_headers_panel.add(JButton('Add new header', actionPerformed = self.add_header_to_file))
     self.add_header_button.setForeground(Color.WHITE)
     self.add_header_button.setBackground(Color(10,101,247))

@@ -1,2 +1,4 @@
 1 x-powered-by
 1 server
+1 Nrr
+1 uur
