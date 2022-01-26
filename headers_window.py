@@ -315,28 +315,28 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     for i in range(self.initial_count_security_headers):
       if self.model_tab_config_security.getValueAt(i,0):
-        self.table_config_security.append(self.model_tab_config_security.getValueAt(i,1)) 
+        self.table_config_security.append([True, self.model_tab_config_security.getValueAt(i,1)]) 
 
     for i in range(self.initial_count_dangerous_headers):
       if self.model_tab_config_dangerous.getValueAt(i,0):
-        self.table_config_dangerous.append(self.model_tab_config_dangerous.getValueAt(i,1)) 
+        self.table_config_dangerous.append([True, self.model_tab_config_dangerous.getValueAt(i,1)]) 
     
     for i in range(self.initial_count_potentially_dangerous_headers):
       if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
-        self.table_config_potentially_dangerous.append(self.model_tab_config_potentially_dangerous.getValueAt(i,1)) 
+        self.table_config_potentially_dangerous.append([True, self.model_tab_config_potentially_dangerous.getValueAt(i,1)]) 
 
     self.dangerous_headers = [] 
     self.security_headers = [] 
     self.potentially_dangerous_headers = [] 
 
     for line in self.table_config_security:
-        self.security_headers.append(line.strip('\n'))
+        self.security_headers.append(line[1].strip('\n'))
     
     for line in self.table_config_dangerous:
-        self.dangerous_headers.append(line.strip('\n'))
+        self.dangerous_headers.append(line[1].strip('\n'))
     
     for line in self.table_config_potentially_dangerous:
-        self.potentially_dangerous_headers.append(line.strip('\n'))
+        self.potentially_dangerous_headers.append(line[1].strip('\n'))
 
   def make_chosen_headers_permanent(self, event):
     f = open("security_headers.txt","w")
@@ -485,16 +485,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return host
 
   def create_advanced_config_frame(self):
-    """Create new frame with advanced settings. It's always present, but only visible when the gear button is clicked"""
     self.advanced_config_panel = JFrame("Advanced configuration")
+    self.advanced_config_panel.setLayout(BorderLayout())
     self.advanced_config_panel.toFront()
     self.advanced_config_panel.setAlwaysOnTop(True)
-    #self.advanced_config_panel.setLayout(FlowLayout())
     self.advanced_config_panel.setSize(800, 600)
     self.advanced_config_panel.setLocationRelativeTo(None)    
 
     # --------------------- Theme selection ------------------------#
-    
     self.theme_model = DefaultComboBoxModel()
     self.theme_model.addElement("Dark")
     self.theme_model.addElement("Light")
@@ -504,8 +502,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
     # --------------------- Headers selection ------------------------#
-
-
     self.table_config_security = []
     self.table_config_potentially_dangerous = []
     self.table_config_dangerous = []
@@ -534,24 +530,27 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       else: 
         self.table_config_dangerous.append([False, line.split(' ')[1].strip('\n')])
 
-    column_names = ("Use?", "Header name")
+    self.config_column_names = ("Use?", "Header name")
 
-    self.model_tab_config_security = ConfigTableModel(self.table_config_security, column_names)
+    print('/////////////////////7')
+    print(self.table_config_security)
+    print('/////////////////////7')
+    self.model_tab_config_security = ConfigTableModel(self.table_config_security, self.config_column_names)
     self.table_tab_config_security = JTable(self.model_tab_config_security)
 
-    self.model_tab_config_potentially_dangerous = ConfigTableModel(self.table_config_potentially_dangerous, column_names)
+    self.model_tab_config_potentially_dangerous = ConfigTableModel(self.table_config_potentially_dangerous, self.config_column_names)
     self.table_tab_config_potentially_dangerous = JTable(self.model_tab_config_potentially_dangerous)
 
-    self.model_tab_config_dangerous = ConfigTableModel(self.table_config_dangerous, column_names)
+    self.model_tab_config_dangerous = ConfigTableModel(self.table_config_dangerous, self.config_column_names)
     self.table_tab_config_dangerous = JTable(self.model_tab_config_dangerous)
     
-    self.table_tab_config_security.getColumnModel().getColumn(0).setPreferredWidth(50)
+    self.table_tab_config_security.getColumnModel().getColumn(0).setMaxWidth(50)
     self.table_tab_config_security.getColumnModel().getColumn(1).setPreferredWidth(400)
 
-    self.table_tab_config_potentially_dangerous.getColumnModel().getColumn(0).setPreferredWidth(50)
+    self.table_tab_config_potentially_dangerous.getColumnModel().getColumn(0).setMaxWidth(50)
     self.table_tab_config_potentially_dangerous.getColumnModel().getColumn(1).setPreferredWidth(400)
 
-    self.table_tab_config_dangerous.getColumnModel().getColumn(0).setPreferredWidth(50)
+    self.table_tab_config_dangerous.getColumnModel().getColumn(0).setMaxWidth(50)
     self.table_tab_config_dangerous.getColumnModel().getColumn(1).setPreferredWidth(400)
 
     c = GridBagConstraints()
@@ -568,38 +567,98 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
 
-    self.tabs = JTabbedPane() 
-    self.tabs.addTab('Security headers', security_headers_tab)
-    self.tabs.addTab('Dangerous headers', dangerous_headers_tab)
-    self.tabs.addTab('Potentially dangerous headers', potentially_dangerous_headers_tab)
     # ----------------------------------------------------------------#
     
-
-
-    # --------------------- Main tabs --------------------------------#
-    main_panel = JPanel(GridBagLayout())
-    headers_criteria_panel = JPanel()
-    theme_panel = JPanel()
-    self.main_tabs = JTabbedPane() 
-    self.main_tabs.addTab('Configure headers criteria', headers_criteria_panel)
-    self.main_tabs.addTab('Theme', theme_panel)
-    main_panel.add(self.main_tabs, c)
-    self.advanced_config_panel.add(main_panel)
-
-
-
-    # ----------------------------------------------------------------#
-
-
 
     # ------------------ Add contents to main tabs -------------------#
-    headers_criteria_panel.add(self.tabs)
-    headers_criteria_panel.add(JButton("Add header to category", actionPerformed = self.add_headers_to_categories))
-    headers_criteria_panel.add(JButton("Make chosen headers permanent", actionPerformed = self.make_chosen_headers_permanent))
-    theme_panel.add(theme_selector)
+    aux_panel = JPanel(BorderLayout())
+    theme_panel = JPanel(GridBagLayout())
+
+    # Add buttons at the bottom inside a panel
+    add_header_to_category_button = JButton("<html><b>Add header to category</b></html>", actionPerformed = self.add_headers_to_categories)
+    add_header_to_category_button.setForeground(Color.WHITE)
+    add_header_to_category_button.setBackground(Color(10,101,247))
+
+    make_curr_selection_permanent_button = JButton("<html><b>Make current selection permanent</b></html>", actionPerformed = self.make_chosen_headers_permanent)
+    make_curr_selection_permanent_button.setForeground(Color.WHITE)
+    make_curr_selection_permanent_button.setBackground(Color(10,101,247))
+
+    button_panel = JPanel(GridBagLayout())
+    e = GridBagConstraints()
+    e.fill = GridBagConstraints.HORIZONTAL
+    e.gridx = 0
+    e.weightx = 1
+    e.gridy = 0
+    button_panel.add(add_header_to_category_button, e) 
+    e.gridx = 1
+    button_panel.add(make_curr_selection_permanent_button, e)
+
+
+    # Fill the tables for each category
+    categories_tabs = JTabbedPane()
+    categories_tabs.add("Security headers", JScrollPane(self.table_tab_config_security))
+    categories_tabs.add("Potentially dangerous headers", JScrollPane(self.table_tab_config_potentially_dangerous))
+    categories_tabs.add("Dangerous headers", JScrollPane(self.table_tab_config_dangerous))
+    aux_panel.add(categories_tabs, BorderLayout.CENTER)
+    aux_panel.add(button_panel, BorderLayout.SOUTH)
+
+
+    #--------------- threshold panel ---------------------
+    threshold_panel = JPanel(GridBagLayout())
+    c = GridBagConstraints()
+    c.anchor = GridBagConstraints.WEST
+    c.gridx = 0
+    c.gridy = 0
+    threshold_panel.add(JLabel("Use threshold for Security headers?"), c)
+    c.gridy += 1
+    threshold_panel.add(JLabel("Use threshold for Potentially Dangerous headers?"), c) 
+    c.gridy += 1
+    threshold_panel.add(JLabel("Use threshold for Dangerous headers?"), c) 
+
+    c.gridx = 1
+    c.gridy = 0
+    check_box_security = JCheckBox()
+    threshold_panel.add(check_box_security, c)
+    c.gridy += 1
+    check_box_potentially_dangerous = JCheckBox()
+    threshold_panel.add(check_box_potentially_dangerous, c)
+    c.gridy += 1
+    check_box_dangerous = JCheckBox()
+    threshold_panel.add(check_box_dangerous, c)
+
+    c.gridx = 2
+    c.gridy = 0
+    self.threshold_count_security = JTextField("{}".format(len(self.table_config_security)))
+    threshold_panel.add(self.threshold_count_security, c)
+    c.gridy += 1
+    self.threshold_count_potentially_dangerous = JTextField("{}".format(len(self.table_config_potentially_dangerous)))
+    threshold_panel.add(self.threshold_count_potentially_dangerous, c)
+
+    c.gridy += 1
+    self.threshold_count_dangerous = JTextField("{}".format(len(self.table_config_dangerous)))
+    threshold_panel.add(self.threshold_count_dangerous, c)
+
     
 
+    # Theme panel contents
+    d = GridBagConstraints()
+    d.fill = GridBagConstraints.HORIZONTAL
+    d.gridx = 0
+    theme_panel.add(JLabel("If you use Burp's dark theme, you will probably see better this extension by selecting 'dark', and vice versa."))
+    theme_panel.add(theme_selector, d)
+
+
+    # add the main tabs
+    self.main_tabs = JTabbedPane() 
+    self.main_tabs.addTab('Configure headers criteria', aux_panel)
+    self.main_tabs.addTab('Configure thresholds', threshold_panel)
+    self.main_tabs.addTab('Theme', theme_panel)
+
+    self.advanced_config_panel.add(self.main_tabs, BorderLayout.CENTER)
     # ----------------------------------------------------------------#
+
+
+
 
 
     return
@@ -1291,15 +1350,22 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     if filename == "security_headers.txt":
       self.table_config_security.append([True, text])
-      #this should update the table but it doesnt
+      self.model_tab_config_security.setRowCount(0)
+      #self.model_tab_config_security = ConfigTableModel(self.table_config_security, self.config_column_names)
+      
+      for line in self.table_config_security:
+        self.model_tab_config_security.addRow(line)
+      self.table_tab_config_security = JTable(self.model_tab_config_security)
+      print('777')
       self.model_tab_config_security.fireTableDataChanged()
+      print('999')
 
     elif filename == "dangerous_headers.txt":
-      self.table_config_dangerous.append([True, text])
+      self.table_tab_config_dangerous.append([True, text])
       self.model_tab_config_dangerous.fireTableDataChanged()
 
     elif filename == "potentially_dangerous_headers.txt":
-      self.table_config_potentially_dangerous.append([True, text])
+      self.table_tab_config_potentially_dangerous.append([True, text])
       self.model_tab_config_potentially_dangerous.fireTableDataChanged()
 
     
@@ -1335,6 +1401,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     add_headers.setVisible( True )
     add_headers.toFront()
     add_headers.setAlwaysOnTop(True)
+
+    self.threshold_count_security = JTextField("{}".format(len(self.table_config_security)))
+    self.threshold_count_potentially_dangerous = JTextField("{}".format(len(self.table_config_potentially_dangerous)))
+    self.threshold_count_dangerous = JTextField("{}".format(len(self.table_config_dangerous)))
     
     return
     
