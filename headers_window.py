@@ -341,26 +341,48 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def make_chosen_headers_permanent(self, event):
     f = open("security_headers.txt","w")
     for i in range(self.initial_count_security_headers):
-      if self.model_tab_config_security.getValueAt(i,0):
-        f.write("1 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
+      #print(str(i) + '/' + str(self.initial_count_security_headers))
+      if i < self.initial_count_security_headers - 1:
+        if self.model_tab_config_security.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
+        else:
+          f.write("0 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
       else:
-        f.write("0 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
+        if self.model_tab_config_security.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_security.getValueAt(i,1))
+        else:
+          f.write("0 " + self.model_tab_config_security.getValueAt(i,1))
+
     f.close()
 
     f = open("dangerous_headers.txt","w")
     for i in range(self.initial_count_dangerous_headers):
-      if self.model_tab_config_dangerous.getValueAt(i,0):
-        f.write("1 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
+      if i < self.initial_count_dangerous_headers - 1:
+        if self.model_tab_config_dangerous.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
+        else:
+          f.write("0 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
       else:
-        f.write("0 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
+        if self.model_tab_config_dangerous.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_dangerous.getValueAt(i,1))
+        else:
+          f.write("0 " + self.model_tab_config_dangerous.getValueAt(i,1))
+
     f.close()
     
     f = open("potentially_dangerous_headers.txt","w")
     for i in range(self.initial_count_potentially_dangerous_headers):
-      if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
-        f.write("1 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
+      if i < self.initial_count_potentially_dangerous_headers - 1:
+        if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
+        else:
+          f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
       else:
-        f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
+        if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1))
+        else:
+          f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1)
+          )
     f.close()
 
   def create_extra_info_window(self):
@@ -532,9 +554,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.config_column_names = ("Use?", "Header name")
 
-    print('/////////////////////7')
-    print(self.table_config_security)
-    print('/////////////////////7')
     self.model_tab_config_security = ConfigTableModel(self.table_config_security, self.config_column_names)
     self.table_tab_config_security = JTable(self.model_tab_config_security)
 
@@ -579,6 +598,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     add_header_to_category_button.setForeground(Color.WHITE)
     add_header_to_category_button.setBackground(Color(10,101,247))
 
+    remove_header_from_category_button = JButton("<html><b>Remove header from category</b></html>", actionPerformed = self.remove_headers_from_categories)
+    remove_header_from_category_button.setForeground(Color.WHITE)
+    remove_header_from_category_button.setBackground(Color(210,101,47))#Color(10,101,247)) Color(210,101,47)
+
     make_curr_selection_permanent_button = JButton("<html><b>Make current selection permanent</b></html>", actionPerformed = self.make_chosen_headers_permanent)
     make_curr_selection_permanent_button.setForeground(Color.WHITE)
     make_curr_selection_permanent_button.setBackground(Color(10,101,247))
@@ -590,16 +613,18 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     e.weightx = 1
     e.gridy = 0
     button_panel.add(add_header_to_category_button, e) 
-    e.gridx = 1
+    e.gridx += 1
+    button_panel.add(remove_header_from_category_button, e) 
+    e.gridx += 1
     button_panel.add(make_curr_selection_permanent_button, e)
 
 
     # Fill the tables for each category
-    categories_tabs = JTabbedPane()
-    categories_tabs.add("Security headers", JScrollPane(self.table_tab_config_security))
-    categories_tabs.add("Potentially dangerous headers", JScrollPane(self.table_tab_config_potentially_dangerous))
-    categories_tabs.add("Dangerous headers", JScrollPane(self.table_tab_config_dangerous))
-    aux_panel.add(categories_tabs, BorderLayout.CENTER)
+    self.categories_tabs = JTabbedPane()
+    self.categories_tabs.add("Security headers", JScrollPane(self.table_tab_config_security))
+    self.categories_tabs.add("Potentially dangerous headers", JScrollPane(self.table_tab_config_potentially_dangerous))
+    self.categories_tabs.add("Dangerous headers", JScrollPane(self.table_tab_config_dangerous))
+    aux_panel.add(self.categories_tabs, BorderLayout.CENTER)
     aux_panel.add(button_panel, BorderLayout.SOUTH)
 
 
@@ -1350,23 +1375,42 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     if filename == "security_headers.txt":
       self.table_config_security.append([True, text])
-      self.model_tab_config_security.setRowCount(0)
-      for line in self.table_config_security:
-        self.model_tab_config_security.addRow(line)
+      self.model_tab_config_security.addRow([True, text])
+      self.initial_count_security_headers += 1
 
     elif filename == "dangerous_headers.txt":
       self.table_config_dangerous.append([True, text])
-      self.model_tab_config_dangerous.setRowCount(0)
-      for line in self.table_config_dangerous:
-        self.model_tab_config_dangerous.addRow(line)
+      self.model_tab_config_dangerous.addRow([True, text])
+      self.initial_count_dangerous_headers += 1
 
     elif filename == "potentially_dangerous_headers.txt":
       self.table_config_potentially_dangerous.append([True, text])
-      self.model_tab_config_potentially_dangerous.setRowCount(0)
-      for line in self.table_config_potentially_dangerous:
-        self.model_tab_config_potentially_dangerous.addRow(line)
-    
+      self.model_tab_config_potentially_dangerous.addRow([True, text])
+      self.initial_count_potentially_dangerous_headers += 1
+      
     self.added_header_info.setText('Header "{0}" added to {1}'.format(text, filename))
+
+  def remove_headers_from_categories(self, event):
+    selected_tab = self.categories_tabs.getSelectedIndex()
+
+    if selected_tab == 0:
+      selected = self.table_tab_config_security.getSelectedRows()
+      # we need to remove from the last selected to the first selected to avoid confusions when the table model resizes every time we remove an element
+      for i in selected[::-1]:
+        self.initial_count_security_headers -= 1
+        self.model_tab_config_security.removeRow(i)
+
+    if selected_tab == 1:
+      selected = self.table_tab_config_potentially_dangerous.getSelectedRows()
+      for i in selected[::-1]:
+        self.model_tab_config_potentially_dangerous.removeRow(i)
+        self.initial_count_potentially_dangerous_headers -= 1
+
+    if selected_tab == 2:
+      selected = self.table_tab_config_dangerous.getSelectedRows()
+      for i in selected[::-1]:
+        self.model_tab_config_dangerous.removeRow(i)
+        self.initial_count_dangerous_headers -= 1
 
   def add_headers_to_categories(self, event):
     """Configuration panel which the user can use to add new headers to category files."""

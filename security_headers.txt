@@ -1,7 +1,7 @@
 1 cachecontrol
 1 content-security-policy
 1 strict-transport-security
-1 publickeypinning
+1 public-key-pins
 1 x-xss-protection
 1 x-frame-options
 1 x-content-type-options
