@@ -506,6 +506,54 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         break
     return host
 
+  def restore_save_thresholds_func(self, event):
+    f = open('thresholds.txt', 'r')
+    thresholds = f.readlines()
+    f.close()
+
+    check_box_security_value = thresholds[0].split(' ')[0]
+    check_box_potentially_dangerous_value = thresholds[1].split(' ')[0]
+    check_box_dangerous_value = thresholds[2].split(' ')[0]
+    
+    threshold_security_value = thresholds[0].split(' ')[1]
+    threshold_potentially_dangerous_value = thresholds[1].split(' ')[1]
+    threshold_dangerous_value = thresholds[2].split(' ')[1]
+
+    security_checkbox_state = True if check_box_security_value == '1' else False
+    potentially_dangerous_checkbox_state = True if check_box_potentially_dangerous_value == '1' else False
+    dangerous_checkbox_state = True if check_box_dangerous_value == '1' else False
+
+    self.check_box_security.setSelected(security_checkbox_state)
+    self.check_box_potentially_dangerous.setSelected(potentially_dangerous_checkbox_state)
+    self.check_box_dangerous.setSelected(dangerous_checkbox_state)
+
+    self.threshold_count_security.setText(threshold_security_value)
+    self.threshold_count_potentially_dangerous.setText(threshold_potentially_dangerous_value)
+    self.threshold_count_dangerous.setText(threshold_dangerous_value)
+
+  def save_threshold_config_func(self, event):
+    f = open('thresholds.txt', 'w')
+    selected_security = '1' if self.check_box_security.isSelected() == True else '0'
+    selected_potentially_dangerous = '1' if self.check_box_potentially_dangerous.isSelected() == True else '0'
+    selected_dangerous = '1' if self.check_box_dangerous.isSelected() == True else '0'
+    
+    f.write(selected_security + ' ' + self.threshold_count_security.getText() + '\n')
+    f.write(selected_potentially_dangerous + ' ' + self.threshold_count_potentially_dangerous.getText() + '\n')
+    f.write(selected_dangerous + ' ' + self.threshold_count_dangerous.getText())
+
+    f.close()
+    return
+
+  def reset_threshold_config_func(self, event):
+    self.threshold_count_security.setText(str(self.initial_count_security_headers))
+    self.threshold_count_potentially_dangerous.setText("{}".format(self.initial_count_potentially_dangerous_headers))
+    self.threshold_count_dangerous.setText("{}".format(self.initial_count_dangerous_headers))
+
+    self.check_box_security.setSelected(False)
+    self.check_box_dangerous.setSelected(False)
+    self.check_box_potentially_dangerous.setSelected(False)
+    return
+
   def create_advanced_config_frame(self):
     self.advanced_config_panel = JFrame("Advanced configuration")
     self.advanced_config_panel.setLayout(BorderLayout())
@@ -583,9 +631,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     potentially_dangerous_headers_tab = JPanel(GridBagLayout()) 
     potentially_dangerous_headers_tab.add(JScrollPane(self.table_tab_config_potentially_dangerous), c)
-
-
-
     # ----------------------------------------------------------------#
     
 
@@ -634,6 +679,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.anchor = GridBagConstraints.WEST
     c.gridx = 0
     c.gridy = 0
+    c.weightx = 1
+    c.fill = GridBagConstraints.HORIZONTAL
     threshold_panel.add(JLabel("Use threshold for Security headers?"), c)
     c.gridy += 1
     threshold_panel.add(JLabel("Use threshold for Potentially Dangerous headers?"), c) 
@@ -642,14 +689,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     c.gridx = 1
     c.gridy = 0
-    check_box_security = JCheckBox()
-    threshold_panel.add(check_box_security, c)
+    self.check_box_security = JCheckBox()
+    threshold_panel.add(self.check_box_security, c)
     c.gridy += 1
-    check_box_potentially_dangerous = JCheckBox()
-    threshold_panel.add(check_box_potentially_dangerous, c)
+    self.check_box_potentially_dangerous = JCheckBox()
+    threshold_panel.add(self.check_box_potentially_dangerous, c)
     c.gridy += 1
-    check_box_dangerous = JCheckBox()
-    threshold_panel.add(check_box_dangerous, c)
+    self.check_box_dangerous = JCheckBox()
+    threshold_panel.add(self.check_box_dangerous, c)
 
     c.gridx = 2
     c.gridy = 0
@@ -663,13 +710,28 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.threshold_count_dangerous = JTextField("{}".format(len(self.table_config_dangerous)))
     threshold_panel.add(self.threshold_count_dangerous, c)
 
+    c.gridx = 0
+    c.gridy += 1
+    save_threshold_config = JButton("Save thresholds", actionPerformed = self.save_threshold_config_func)
+    threshold_panel.add(save_threshold_config, c)
+
+    c.gridx += 1
+    restore_threshold_config = JButton("Restore saved thresholds", actionPerformed = self.restore_save_thresholds_func)
+    threshold_panel.add(restore_threshold_config, c)
+
+    c.gridx += 1
+    reset_threshold_config = JButton("Reset to default", actionPerformed = self.reset_threshold_config_func)
+    threshold_panel.add(reset_threshold_config, c)
     
+
 
     # Theme panel contents
     d = GridBagConstraints()
     d.fill = GridBagConstraints.HORIZONTAL
     d.gridx = 0
-    theme_panel.add(JLabel("If you use Burp's dark theme, you will probably see better this extension by selecting 'dark', and vice versa."))
+    d.gridy = 0
+    theme_panel.add(JLabel("If you use Burp's dark theme, you will probably see better this extension by selecting 'dark', and vice versa."), d)
+    d.gridy += 1
     theme_panel.add(theme_selector, d)
 
 
@@ -768,15 +830,27 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     """ Make a color more intense if more headers of that type are present. To be used in the unique endpoints table."""
     score = value * 255.0 / total
     if type == "security":
+      if self.check_box_security.isSelected() and value >= int(self.threshold_count_security.getText()):
+        score = 255.0
+      else:
+        score = 0.0
       color = "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
       # if there are no headers of this type show the symbol as brown, looks better
       return color.replace("#000000", "#707070")
 
     elif type == "dangerous":
+      if self.check_box_dangerous.isSelected() and value >= int(self.threshold_count_dangerous.getText()):
+        score = 255.0
+      else:
+        score = 0.0
       color = "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
       return color.replace("#000000", "#707070")
 
     elif type == "potential":
+      if self.check_box_dangerous.isSelected() and value >= int(self.threshold_count_potentially_dangerous.getText()):
+        score = 255.0
+      else:
+        score = 0.0
       R_factor = hex(int(int(0x4F) * score)).split('0x')[1]
       G_factor = hex(int(int(0xC3) * score)).split('0x')[1]
       B_factor = hex(int(int(0xF7) * score)).split('0x')[1]
@@ -1351,7 +1425,20 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def addRB( self, pane, bg, text ):
     """Add radio buttons"""
-    bg.add(pane.add(JRadioButton(text,itemStateChanged = self.toggle)))
+    button = JRadioButton(text,itemStateChanged = self.toggle)
+    index = self.categories_tabs.getSelectedIndex()
+    if index == 0 and text == 'Security headers':
+      button.doClick()
+      self.toggle
+    if index == 1 and text == 'Potentially dangerous headers':
+      button.doClick()
+      self.toggle
+    if index == 2 and text == 'Dangerous or verbose headers':
+      button.doClick()
+      self.toggle
+
+    bg.add(pane.add(button))
+
     return
 
   def toggle( self, event ) :
@@ -1366,12 +1453,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def add_header_to_file(self, event):
-    """Adds a new header supplied by the user to the corresponding category (security, dangerous, potentially dangerous)."""
+    """Adds a new header supplied by the user to the corresponding category (security, dangerous, potentially dangerous). Not saved to file here, that is done with the button for persisting changes."""
     filename = self.file_to_add_headers
     text = self.header_to_add.getText()
-    f = open(filename,"a")
-    f.write("\n" + "1 " + text)
-    f.close()
 
     if filename == "security_headers.txt":
       self.table_config_security.append([True, text])
@@ -1398,6 +1482,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       # we need to remove from the last selected to the first selected to avoid confusions when the table model resizes every time we remove an element
       for i in selected[::-1]:
         self.initial_count_security_headers -= 1
+        print(self.initial_count_security_headers)
         self.model_tab_config_security.removeRow(i)
 
     if selected_tab == 1:
@@ -1447,9 +1532,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     add_headers.toFront()
     add_headers.setAlwaysOnTop(True)
 
-    self.threshold_count_security = JTextField("{}".format(len(self.table_config_security)))
-    self.threshold_count_potentially_dangerous = JTextField("{}".format(len(self.table_config_potentially_dangerous)))
-    self.threshold_count_dangerous = JTextField("{}".format(len(self.table_config_dangerous)))
+    self.threshold_count_security.setText(str(len(self.table_config_security)))
+    self.threshold_count_potentially_dangerous.setText(str(len(self.table_config_potentially_dangerous)))
+    self.threshold_count_dangerous.setText(str(len(self.table_config_dangerous)))
     
     return
     
