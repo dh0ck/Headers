@@ -7,7 +7,7 @@ from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayo
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
-from java.lang import Boolean, String
+from java.lang import Boolean, String, Integer
 from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener, FocusListener
 
@@ -190,6 +190,42 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
         burp_extender_instance.clicked_endpoint(tbl, True)
 
+
+
+class summary_unique_mouse_listener(IssueTableMouseListener):
+  def mouseClicked(self, event):
+    print('summary table clicked')
+
+class summary_all_mouse_listener(IssueTableMouseListener):
+  def mouseClicked(self, event):
+    print('summary all clicked, go to history and show request/response')
+
+class SummaryTableModel(DefaultTableModel):
+  def __init__(self, data, headings):
+    DefaultTableModel.__init__(self, data, headings)
+  
+  def getColumnClass(self, col):
+    # columnas: history index, add to report?, issue type, host, unique endpoint
+    # issue types:
+    # - missing security headers
+    # - dangerous
+    # - potentially dangerous
+    # - http verbs
+    # - cookies without flgas
+
+    return [Integer, Boolean, String, String, String][col]
+  
+  def isCellEditable(self, row, column):
+    """Returns True if cells are editable."""
+    canEdit = [False, True, False, False, False]
+    return canEdit[column]
+
+
+  
+ 
+
+
+
 class IssueTable(JTable):
     """Table class for the tables used in the extension. Needed to give the capacity to tables to perform actions when their rows are clicked."""
     def __init__(self, model, table_type):
@@ -205,6 +241,10 @@ class IssueTable(JTable):
           self.addMouseListener(IssueTableMouseListener_Endpoints())
         elif table_type == "config_headers":
           pass
+        elif table_type == "summary_unique_endpoints":
+          self.addMouseListener(summary_unique_mouse_listener())
+        elif table_type == "summary_all_endpoints":
+          self.addMouseListener(summary_all_mouse_listener())
 
 
 #este es para los filtros, que al borrar el texto se ponga la hint, pero no funciona, mejor pasar de ello
@@ -1558,8 +1598,51 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return
     
+  def create_summary(self):
+    self.summary_frame = JFrame("Summary")
+    self.summary_frame.setLayout(BorderLayout())
+    self.summary_frame.setSize(800, 600)
+    self.summary_frame.setLocationRelativeTo(None)  
+
+    colNames = ("Index", "Report?", "Issue type", "Host", "Unique endpoint" )
+
+    c = GridBagConstraints()
+    c.gridx = 0
+    c.gridy = 0
+    c.weightx = 1
+    c.weighty = 1
+    c.fill = GridBagConstraints.BOTH
+    
+    self.unique_endpoints_summary_model = SummaryTableModel([[123,False,"asdfl", "qewr", "zxcv"]], colNames)
+    summary_unique_table = JTable(self.unique_endpoints_summary_model)
+
+    c.fill = GridBagConstraints.HORIZONTAL  
+    c.gridy += 1
+    
+
+    c.fill = GridBagConstraints.BOTH
+    c.gridy += 1
+    self.all_endpoints_summary_model = SummaryTableModel([[234,True,"asadfdfl", "xxx", "vvv"]], colNames)
+    summary_all_table = JTable(self.all_endpoints_summary_model)
+
+    self.summary_frame.add(JLabel("top"), BorderLayout.NORTH)
+
+    split = JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(summary_unique_table), JScrollPane(summary_all_table))
+    split.setDividerLocation(200)
+    self.summary_frame.add(split, BorderLayout.CENTER)  
+    self.summary_frame.add(JLabel("bottom"), BorderLayout.SOUTH)
+    
+
+  def show_summary(self, event):
+    self.summary_frame.setVisible(True)
+    self.summary_frame.toFront()
+    self.summary_frame.setAlwaysOnTop(True)
+  
   def getUiComponent(self):
     """Builds the interface of the extension tab."""
+
+    self.create_summary()
+
     panel = JPanel(GridBagLayout())
     
     # ================== Add button and filter ===================== #
@@ -1702,15 +1785,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.summary_summary = JEditorPane("text/html", "")
     self.scroll_summary_summary = JScrollPane(self.summary_summary)
 
-
     self.summary_panel = JPanel()
-    self.summary_panel.setLayout(BoxLayout(self.summary_panel,BoxLayout.Y_AXIS))
-    self.summary_panel.add(self.summary_summary)
+    self.summary_panel.setLayout(BorderLayout())
+    self.summary_panel.add(self.scroll_summary, BorderLayout.CENTER)
+    self.summary_panel.add(JButton("htestx", actionPerformed=self.show_summary), BorderLayout.SOUTH)
 
-    self.splt_3 = JSplitPane(JSplitPane.VERTICAL_SPLIT, self.scroll_summary, self.summary_panel)
-    self.splt_3.setDividerLocation(550)
-
-    self.splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.splt_3)#self.scroll_summary)
+    self.splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.summary_panel)
 
     self.splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), self.splt_2) 
     panel.add(self.splt_1, c)
@@ -2071,12 +2151,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     '''el numero en bytes es el valor binario de ascii, por ej N=78, y la newline que separa header y body es 0D 0A 0D 0A = 13 10 13 10 = \r\n\r\n'''
 
     # --------------- create tabs and place JTables inside -------------#
-    tab1 = JPanel()
-    tab2 = JPanel()
+    #tab1 = JPanel()
+    #tab2 = JPanel()
 
     frame = JFrame("Headers")
     frame.setSize(850, 350)
-    colNames = ('Header name','Header description')
+    #colNames = ('Header name','Header description')
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
 
 
