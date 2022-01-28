@@ -255,15 +255,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       if feature == "last_save_type":
         self.save_format.setSelectedItem(value)
         self.config_dict[feature] = value
-        #self.save_format_config_value = value
       elif feature == "last_output_file":
         self.save_path.setText(value)        
         self.config_dict[feature] = value
-        #self.save_path_config_value = value
       elif feature == "last_filter_type":
         self.preset_filters.setSelectedItem(value)
         self.config_dict[feature] = value
-        #self.preset_filters_config_value = value
       elif feature == "UI_theme":
         self.UI_theme = value
         self.config_dict[feature] = value
@@ -828,34 +825,46 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def ColorScore(self, value, total, type):
     """ Make a color more intense if more headers of that type are present. To be used in the unique endpoints table."""
-    score = value * 255.0 / total
+    
     if type == "security":
-      if self.check_box_security.isSelected() and value >= int(self.threshold_count_security.getText()):
-        score = 255.0
+      if total != 0: #this is done to avoid dividing by zero. if there are no selected headers for a category, return brown color
+        score = value * 255.0 / total
+        if self.check_box_security.isSelected() and value >= int(self.threshold_count_security.getText()):
+          score = 255.0
+        elif self.check_box_security.isSelected() and value < int(self.threshold_count_security.getText()):
+          score = 0.0
+        color = "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
+        # if there are no headers of this type show the symbol as brown, looks better
+        return color.replace("#000000", "#707070")
       else:
-        score = 0.0
-      color = "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
-      # if there are no headers of this type show the symbol as brown, looks better
-      return color.replace("#000000", "#707070")
+        return "#707070"
 
     elif type == "dangerous":
-      if self.check_box_dangerous.isSelected() and value >= int(self.threshold_count_dangerous.getText()):
-        score = 255.0
+      if total != 0:
+        score = value * 255.0 / total
+        if self.check_box_dangerous.isSelected() and value >= int(self.threshold_count_dangerous.getText()):
+          score = 255.0
+        elif self.check_box_dangerous.isSelected() and value < int(self.threshold_count_dangerous.getText()):
+          score = 0.0
+        color = "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
+        return color.replace("#000000", "#707070")
       else:
-        score = 0.0
-      color = "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
-      return color.replace("#000000", "#707070")
+        return "#707070"
 
     elif type == "potential":
-      if self.check_box_dangerous.isSelected() and value >= int(self.threshold_count_potentially_dangerous.getText()):
-        score = 255.0
+      if total != 0:
+        score = value * 255.0 / total
+        if self.check_box_potentially_dangerous.isSelected() and value >= int(self.threshold_count_potentially_dangerous.getText()):
+          score = 255.0
+        elif self.check_box_potentially_dangerous.isSelected() and value < int(self.threshold_count_potentially_dangerous.getText()):
+          score = 0.0
+        R_factor = hex(int(int(0x4F) * score)).split('0x')[1]
+        G_factor = hex(int(int(0xC3) * score)).split('0x')[1]
+        B_factor = hex(int(int(0xF7) * score)).split('0x')[1]
+        color = "#{0}{1}{2}".format(R_factor.zfill(2), G_factor.zfill(2), B_factor.zfill(2))
+        return color.replace("#000000", "#707070")
       else:
-        score = 0.0
-      R_factor = hex(int(int(0x4F) * score)).split('0x')[1]
-      G_factor = hex(int(int(0xC3) * score)).split('0x')[1]
-      B_factor = hex(int(int(0xF7) * score)).split('0x')[1]
-      color = "#{0}{1}{2}".format(R_factor.zfill(2), G_factor.zfill(2), B_factor.zfill(2))
-      return color.replace("#000000", "#707070")
+        return "#707070"
 
   def UpdateHeaders(self, event):
     """Get the latest version of the request and response headers file from the Github repo. The urllib2 takes some seconds to load, so it's only loaded if this function is ever called, to improve performance."""
@@ -914,10 +923,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     """Creates the extra symbols for security [+], dangerous [X] and potentially dangrous [?] headers that are shown in the request header summary at the right side of the screen."""
     
     
-    print('------------------------')
-    print(self.security_headers)
-    print(head)
-    print('------------------------\n\n')
     if head.split(": ")[0].lower() in self.security_headers:
       extra_symbol = '<b><font color="#00FF00"> [ + ] </font><b>'
     elif head.split(": ")[0].lower() in self.dangerous_headers:
@@ -1365,7 +1370,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.model_all_endpoints.setRowCount(0)
     self.unique_entries = []
 
-
+    
+    total_security = 0
+    total_dangerous = 0
+    total_potentially_dangerous = 0
+    for i in range(self.model_tab_config_security.getRowCount()):
+      total_security += self.model_tab_config_security.getValueAt(i,0)
+    for i in range(self.model_tab_config_potentially_dangerous.getRowCount()):
+      total_potentially_dangerous += self.model_tab_config_potentially_dangerous.getValueAt(i,0)
+    for i in range(self.model_tab_config_dangerous.getRowCount()):
+      total_dangerous += self.model_tab_config_dangerous.getValueAt(i,0)
 
     #meter filtro de endpoints
     keywords = self.filter_endpoints.getText().lower().split(',')
@@ -1398,12 +1412,18 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             symbols_color = {}
             for color in colors.keys():
 
+        
+    
+    
               if color == "security":
-                total = self.total_security_headers
+                total = total_security
+                #total = self.total_security_headers
               elif color == "potential":
-                total = self.total_potential_headers
+                total = total_potentially_dangerous 
+                #total = self.total_potential_headers
               elif color == "dangerous":
-                total = self.total_dangerous_headers
+                total = total_dangerous 
+                #total = self.total_dangerous_headers
               symbols_color[color] = self.ColorScore(colors[color], total, color)
 
             symbols_string = '<b><font color="{0}">[{1}+]</font><font color="{2}">[{3}?]</font><font color="{4}">[{5}X]</font></b> - '.format(symbols_color   ["security"], colors["security"], symbols_color["potential"], colors["potential"], symbols_color["dangerous"], colors["dangerous"])
