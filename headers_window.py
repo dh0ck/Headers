@@ -873,6 +873,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           score = 255.0
         elif self.check_box_security.isSelected() and value < int(self.threshold_count_security.getText()):
           score = 0.0
+        elif score > 255.0:
+          score = 255.0
         color = "#00{}00".format(hex(int(score)).split('0x')[1].zfill(2))
         # if there are no headers of this type show the symbol as brown, looks better
         return color.replace("#000000", "#707070")
@@ -886,6 +888,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           score = 255.0
         elif self.check_box_dangerous.isSelected() and value < int(self.threshold_count_dangerous.getText()):
           score = 0.0
+        elif score > 255.0:
+          score = 255.0
         color = "#{}0000".format(hex(int(score)).split('0x')[1].zfill(2))
         return color.replace("#000000", "#707070")
       else:
@@ -898,6 +902,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           score = 255.0
         elif self.check_box_potentially_dangerous.isSelected() and value < int(self.threshold_count_potentially_dangerous.getText()):
           score = 0.0
+        elif score > 255.0:
+          score = 255.0
         R_factor = hex(int(int(0x4F) * score)).split('0x')[1]
         G_factor = hex(int(int(0xC3) * score)).split('0x')[1]
         B_factor = hex(int(int(0xF7) * score)).split('0x')[1]
@@ -1625,12 +1631,36 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.all_endpoints_summary_model = SummaryTableModel([[234,True,"asadfdfl", "xxx", "vvv"]], colNames)
     summary_all_table = JTable(self.all_endpoints_summary_model)
 
-    self.summary_frame.add(JLabel("top"), BorderLayout.NORTH)
+    north_panel = JPanel(GridBagLayout())
+    c = GridBagConstraints()
+    c.anchor = GridBagConstraints.WEST
+    
+    north_panel.add(JButton("Update"), c)
+    c.weightx = 1
+    checkbox_missing_security = JCheckBox("Missing security headers")
+    checkbox_potentially_dangerous = JCheckBox("Potentially Dangerous headers")
+    checkbox_dangerous = JCheckBox("Dangerous or verbose headers")
+    north_panel.add(checkbox_missing_security, c)
+    north_panel.add(checkbox_potentially_dangerous, c)
+    north_panel.add(checkbox_dangerous, c)
+    self.summary_frame.add(north_panel, BorderLayout.NORTH)
 
     split = JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(summary_unique_table), JScrollPane(summary_all_table))
     split.setDividerLocation(200)
     self.summary_frame.add(split, BorderLayout.CENTER)  
-    self.summary_frame.add(JLabel("bottom"), BorderLayout.SOUTH)
+
+    south_panel = JPanel(GridBagLayout())
+    c = GridBagConstraints()
+    c.fill = GridBagConstraints.HORIZONTAL
+    c.anchor = GridBagConstraints.WEST
+    c.weightx = 0
+    south_panel.add(JButton("Choose output file"), c)
+    c.weightx = 1
+    south_panel.add(JTextField("Output file"), c)
+    c.anchor = GridBagConstraints.WEST
+    c.weightx = 0
+    south_panel.add(JButton("Generate .docx report"), c)
+    self.summary_frame.add(south_panel, BorderLayout.SOUTH)
     
 
   def show_summary(self, event):
@@ -1788,7 +1818,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.summary_panel = JPanel()
     self.summary_panel.setLayout(BorderLayout())
     self.summary_panel.add(self.scroll_summary, BorderLayout.CENTER)
-    self.summary_panel.add(JButton("htestx", actionPerformed=self.show_summary), BorderLayout.SOUTH)
 
     self.splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.summary_panel)
 
@@ -1806,12 +1835,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_but.setBackground(Color(10,101,247))
     JPanel2.add( self.save_but, c )
 
-    c.gridx += 1
-    c.gridy = y_pos
-    c.anchor = GridBagConstraints.WEST
-    self.save_but = JButton('<html><b><font color="white">Preview</font></b></html>', actionPerformed = self.save_json)
-    self.save_but.setBackground(Color(10,101,247))
-    JPanel2.add( self.save_but, c )
+
 
     c.gridx += 1
     c.gridy = y_pos
@@ -1845,6 +1869,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_path = JTextField('Save headers to... (write full path or click "Choose output file". The file will be created)')
     JPanel2.add(self.save_path , c )
     
+    c.gridx += 1
+    c.weightx = 0
+    c.gridy = y_pos
+    c.anchor = GridBagConstraints.EAST
+    self.save_but = JButton('<html><b><font color="white">Summary</font></b></html>', actionPerformed = self.show_summary)
+    self.save_but.setBackground(Color(10,101,247))
+    JPanel2.add( self.save_but, c )
 
     c = GridBagConstraints()
     y_pos += 1
