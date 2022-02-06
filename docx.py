@@ -1,0 +1,1 @@
+print("this is run from python3, external file")

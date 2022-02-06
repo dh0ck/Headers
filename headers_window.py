@@ -1,9 +1,10 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
 import java
+import subprocess
 import shutil, glob, re, sys, os
 from time import sleep
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox, JRadioButton, ButtonGroup
+from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox, JRadioButton, ButtonGroup, KeyStroke
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
@@ -190,8 +191,6 @@ class IssueTableMouseListener_Endpoints(IssueTableMouseListener):
 
         burp_extender_instance.clicked_endpoint(tbl, True)
 
-
-
 class summary_unique_mouse_listener(IssueTableMouseListener):
   def mouseClicked(self, event):
     print('summary table clicked')
@@ -219,12 +218,6 @@ class SummaryTableModel(DefaultTableModel):
     """Returns True if cells are editable."""
     canEdit = [False, True, False, False, False]
     return canEdit[column]
-
-
-  
- 
-
-
 
 class IssueTable(JTable):
     """Table class for the tables used in the extension. Needed to give the capacity to tables to perform actions when their rows are clicked."""
@@ -280,7 +273,6 @@ class IssueTable(JTable):
     #return showingHint ? "" : super().getText()
     return "" if self.showingHint else super().getText()'''
   
-
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   """Main class of the Headers extension, instantiated by Burp."""
@@ -810,6 +802,53 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #self.initial_count_potentially_dangerous_headers = len(f.readlines())
     f.close()
 
+  def check_python_modules(self, event):
+    # subprocess que guarde en una variable output de python -c import ...
+    
+    os_type = sys.platform.getshadow()
+    win_python_command = 'py --version'
+    linux_python_command = 'python3 --version'
+    win_python_command = 'py docx.py'
+    if 'win' in os_type:
+      proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
+    elif 'linux' in os_type:
+      proc = subprocess.Popen(linux_python_command, stdout=subprocess.PIPE)
+    else:
+      raise("Error identifying operating system type. Provide path to Python3 binary.")
+
+    output = proc.stdout.read()
+    print(output)
+    self.python_msg.setText(output)
+
+
+  def create_docx_frame(self):
+    self.docx_frame = JFrame("Configure .docx report")
+    self.docx_frame.setLayout(GridBagLayout())
+    self.docx_frame.setAlwaysOnTop(True)
+    self.docx_frame.setSize(800, 600)
+    self.docx_frame.setLocationRelativeTo(None)  
+    self.docx_frame.toFront()
+    self.docx_frame.setAlwaysOnTop(True)
+
+    c = GridBagConstraints()
+    c.gridx = 0
+    c.weightx = 0
+    c.gridy = 0
+    self.docx_frame.add(JLabel('Make sure your Python3 installation runs on windows by typing "py" on Powershell or python3 or bash'), c)
+    c.gridy += 1
+    c.weightx = 1
+    c.fill = GridBagConstraints.HORIZONTAL
+    self.python_path_textfield = JTextField()
+    self.docx_frame.add(self.python_path_textfield, c)
+
+    c.gridy += 1
+    self.check_python_docx_modules = JButton("Check docx modules", actionPerformed = self.check_python_modules)
+    self.docx_frame.add(self.check_python_docx_modules, c)
+
+    c.gridy += 1
+    self.python_msg = JTextArea()
+    self.docx_frame.add(self.python_msg, c)
+
   def registerExtenderCallbacks(self, callbacks):
     """Import Burp Extender callbacks and execute some preliminary functions for setting up the extension when it's loaded with proper configurations"""
     self._callbacks = callbacks
@@ -840,6 +879,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.create_extra_info_window()
     self.get_categories_headers_length()
     self.read_headers()
+    self.create_docx_frame()
     self.selected_host = ""
     self.selected_header = ""
     self.is_meta = False
@@ -1604,6 +1644,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     return
     
+  def show_docx(self, event):
+    self.docx_frame.setVisible(True)
+    self.docx_frame.toFront()
+    self.docx_frame.setAlwaysOnTop(True)
+
   def create_summary(self):
     self.summary_frame = JFrame("Summary")
     self.summary_frame.setLayout(BorderLayout())
@@ -1659,9 +1704,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     south_panel.add(JTextField("Output file"), c)
     c.anchor = GridBagConstraints.WEST
     c.weightx = 0
-    south_panel.add(JButton("Generate .docx report"), c)
+    south_panel.add(JButton(".docx report", actionPerformed = self.show_docx), c)
     self.summary_frame.add(south_panel, BorderLayout.SOUTH)
     
+  def printxx(self, event):
+    print('down xx')
 
   def show_summary(self, event):
     self.summary_frame.setVisible(True)
@@ -1762,6 +1809,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req, "tab")
+    #im = self.table_tab_req.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+    #im.put(KeyStroke.getKeyStroke("DOWN"), self.printxx)
+    #im.put(KeyStroke.getKeyStroke("DOWN", 0), self.printxx)
 
     self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(100)
     self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(100)
