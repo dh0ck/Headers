@@ -425,7 +425,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.extra_info.setAlwaysOnTop(True)
 
     self.extra_info_label1 = JLabel("<html><b><font color='orange'>Header Name:</font></b></html>")
-    self.extra_info_label1.putClientProperty("html.disable", None)
     #extra_info_label1 = JLabel("<html><b><font color='{}'>Header Name:</font></b></html>".format(self.color1))
     self.extra_info_label1.setAlignmentX(JLabel.LEFT_ALIGNMENT)
     self.extra_info_textarea1 = JTextArea("Header Name", rows=1, editable=False)
@@ -434,7 +433,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.scrollPane_1.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
     self.extra_info_label2 = JLabel("<html><b><font color='orange'>Header Description:</font></b></html>")
-    self.extra_info_label2.putClientProperty("html.disable", None)
     #extra_info_label2 = JLabel("<html><b><font color='{}'>Header Description:</font></b></html>".format(self.color1))
     self.extra_info_label2.setAlignmentX(JLabel.LEFT_ALIGNMENT)
     self.extra_info_textarea2 = JTextArea("Description",rows=5, editable=False)
@@ -443,7 +441,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.scrollPane_2.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
     self.extra_info_label3 = JLabel("<html><b><font color='orange'>Usage example:</font></b></html>")
-    self.extra_info_label3.putClientProperty("html.disable", None)
     #extra_info_label3 = JLabel("<html><b><font color='{}'>Usage example:</font></b></html>".format(self.color1))
     self.extra_info_label3.setAlignmentX(JLabel.LEFT_ALIGNMENT)
     self.extra_info_textarea3 = JTextArea("Example",rows=3, editable=False)
@@ -452,7 +449,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.scrollPane_3.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
     self.extra_info_label4 = JLabel("<html><b><font color='orange'>URL describing header:</font></b></html>")
-    self.extra_info_label4.putClientProperty("html.disable", None)
     #extra_info_label4 = JLabel("<html><b><font color='{}'>URL describing header:</font></b></html>".format(self.color1))
     self.extra_info_label4.setAlignmentX(JLabel.LEFT_ALIGNMENT)
     self.extra_info_textarea4 = JTextArea("URL2",rows=2, editable=False)
@@ -461,7 +457,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.scrollPane_4.setAlignmentX(JScrollPane.LEFT_ALIGNMENT)
 
     self.extra_info_label5 = JLabel("<html><b><font color='orange'>Potential risks associated with header:</font></b></html>")
-    self.extra_info_label5.putClientProperty("html.disable", None)
     #extra_info_label5 = JLabel("<html><b><font color='{}'>Potential risks associated with header:</font></b></html>".format(self.color1))
     self.extra_info_label5.setAlignmentX(JLabel.LEFT_ALIGNMENT)
     self.extra_info_textarea5 = JTextArea("There are no potential risks associated with this header",rows=3, editable=False)
@@ -674,17 +669,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # Add buttons at the bottom inside a panel
     add_header_to_category_button = JButton("<html><b>Add header to category</b></html>", actionPerformed = self.add_headers_to_categories)
-    add_header_to_category_button.putClientProperty("html.disable", None)
     add_header_to_category_button.setForeground(Color.WHITE)
     add_header_to_category_button.setBackground(Color(10,101,247))
 
     remove_header_from_category_button = JButton("<html><b>Remove header from category</b></html>", actionPerformed = self.remove_headers_from_categories)
-    remove_header_from_category_button.putClientProperty("html.disable", None)
     remove_header_from_category_button.setForeground(Color.WHITE)
     remove_header_from_category_button.setBackground(Color(210,101,47))#Color(10,101,247)) Color(210,101,47)
 
     make_curr_selection_permanent_button = JButton("<html><b>Make current selection permanent</b></html>", actionPerformed = self.make_chosen_headers_permanent)
-    make_curr_selection_permanent_button.putClientProperty("html.disable", None)
     make_curr_selection_permanent_button.setForeground(Color.WHITE)
     make_curr_selection_permanent_button.setBackground(Color(10,101,247))
 
@@ -1739,8 +1731,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
     #self.filter_but = JButton('<html><b><font color="white">Update table</font></b></html>', actionPerformed = self.filter_entries)
-    self.filter_but = JButton('<html><b><font color="white">Update table</font></b></html>', actionPerformed = self.filter_entries)
-    self.filter_but.putClientProperty("html.disable", None)
+    self.filter_but = JButton('Update table', actionPerformed = self.filter_entries)
     self.filter_but.setBackground(Color(210,101,47))
     JPanel1.add( self.filter_but, c )
 
@@ -1802,7 +1793,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.HORIZONTAL
     c.anchor = GridBagConstraints.WEST
     text1 = JLabel("<html><hr></html> ")
-    text1.putClientProperty("html.disable", None)
     panel.add( text1 , c)
 
     # ================== Add table ===================== #
@@ -1820,7 +1810,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req, "tab")
-    self.table_tab_req.putClientProperty("html.disable", None)
     #im = self.table_tab_req.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
     #im.put(KeyStroke.getKeyStroke("DOWN"), self.printxx)
     #im.put(KeyStroke.getKeyStroke("DOWN", 0), self.printxx)
@@ -1872,7 +1861,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
 
     self.header_summary = JEditorPane("text/html", "")
-    self.header_summary.putClientProperty("html.disable", None)
     self.scroll_summary = JScrollPane(self.header_summary)
 
     self.summary_summary = JEditorPane("text/html", "")
@@ -1895,7 +1883,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
     self.save_but = JButton('<html><b><font color="white">Save headers</font></b></html>', actionPerformed = self.save_json)
-    self.save_but.putClientProperty("html.disable", None)
     self.save_but.setBackground(Color(10,101,247))
     JPanel2.add( self.save_but, c )
 
@@ -1924,7 +1911,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridx += 1 
     c.gridy = y_pos
     self.choose_file_but = JButton('<html><b><font color="white">Choose output file</font></b></html>', actionPerformed = self.choose_output_file)
-    self.choose_file_but.putClientProperty("html.disable", None)
     JPanel2.add( self.choose_file_but, c )
 
     c.fill = GridBagConstraints.HORIZONTAL
@@ -1939,7 +1925,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridy = y_pos
     c.anchor = GridBagConstraints.EAST
     self.save_but = JButton('<html><b><font color="white">Summary</font></b></html>', actionPerformed = self.show_summary)
-    self.save_but.putClientProperty("html.disable", None)
     self.save_but.setBackground(Color(10,101,247))
     JPanel2.add( self.save_but, c )
 
@@ -2020,7 +2005,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.meta_headers_already_in_table = []
 
-    #self.model_tab_meta.putClientProperty("html.disable", None)
     last_meta = ''
     k = 0
     for table_entry_meta in self.for_table_meta_uniques:
@@ -2134,7 +2118,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               if [key, host] not in self.for_table:
                 if k1 == 0 and key not in self.headers_already_in_table:
                   self.for_table.append(['<html><b><font color="{}">'.format(self.color1) + key + '</font></b></html>', host]) # used for displaying data in Host-Header table
-                  ############## self.for_table.putClientProperty("html.disable", None)
                   added_something = True
                   self.header_host_table.append([key, key, host]) # used for saving data to file in disk
                   if key not in self.headers_already_in_table:
@@ -2231,7 +2214,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         if req_head_name not in self.aux_names_req:
           self.tableDataReq.append(['<html><b><font color="{}">'.format(self.color1) + req_head_name + '</b></font></html>', description, host])
         self.aux_names_req.append(req_head_name)
-        self.tableDataReq.putClientProperty("html.disable", None)
     
       # ----------------- responses ---------------#
       response = self._helpers.bytesToString(traffic.getResponse()).split('\r\n\r\n')[0]
@@ -2245,7 +2227,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         if resp_head_name not in self.aux_names_resp:
           self.tableDataResp.append(['<html><b><font color="{}">'.format(self.color1) + resp_head_name + '</b></font></html>', description, host])
         self.aux_names_resp.append(resp_head_name)
-        self.tableDataResp.putClientProperty("html.disable", None)
 
     self.tableDataReq.sort()      
     self.tableDataResp.sort()
@@ -2393,7 +2374,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     # ========================= about panel =============================== #
     panelTab4 = JPanel()
-    panelTab4.putClientProperty("html.disable", None)
     panelTab4.setLayout(BoxLayout(panelTab4, BoxLayout.Y_AXIS ) )
     
     a1 = "    Thank you for using Headers"

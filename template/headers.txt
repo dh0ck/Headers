@@ -1,0 +1,13 @@
+# 1 = HTTP Strict Transport Security
+# 2 = Access-Control-Allow-Origin
+# 3 = X-Frame-Options
+# 4 = Content-Security-Policy
+# 5 = X-Content-Type-Options
+# 6 = X-XSS-Protection
+
+MCS-BCK1:10.2.10.6:5985-1,2,3,4,5,6;5986-1,2,3,4,5,6
+GDAP-VIRT-SRV2:10.2.10.9:80-1,2,3,4,5,6;9080-1,2,4,5,6
+GDAP-WAFW2:10.2.20.2:80-1,2,3,4,5,6;443-1,2,3,4,5,6
+GDAP-Helpdesk:10.2.30.4:8080-1,2,3,4,5,6
+GDAP-WAFW2:10.12.10.2:80-1,2,3,4,5,6;443-1,2,3,4,5,6
+GDAP-Helpdesk:10.12.30.4:8080-1,2,3,4,5,6;8081-1,2,3,4,5,6;8090-1,2,3,4,5,6;8091-1,2,3,4,5,6;8442-1,2,3,4,5,6
