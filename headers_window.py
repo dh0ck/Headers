@@ -20,6 +20,46 @@ endpoint_table = []
 endpoint_table_meta = []
 selected_header_name = ""
 
+
+class RawHtmlRenderer(DefaultTableCellRenderer):
+    def __init__(self):
+        self.result = JLabel()
+        self.DTCR = DefaultTableCellRenderer()
+
+    def getTableCellRendererComponent(
+        self,
+        table,               # JTable  - table containing value
+        value,               # Object  - value being rendered
+        isSelected,          # boolean - Is value selected?
+        hasFocus,            # boolean - Does this cell have focus?
+        row,                 # int     - Row # (0..N)
+        col                  # int     - Col # (0..N)
+    ) :
+        comp = self.DTCR.getTableCellRendererComponent(
+            table, value, isSelected, hasFocus, row, col
+        )
+        
+
+
+        result = self.result
+
+        ############################################################################
+        ###### something is not right, clicking on cells doesn't change selected background
+        result.setBorder( comp.getBorder() )
+        if (isSelected):
+            result.setBackground(table.getSelectionBackground())
+            #result.setBackground(Color.blue))
+            result.setForeground(table.getSelectionForeground())
+
+        else:
+            result.setBackground(table.getBackground())
+            result.setForeground(table.getForeground())
+        ################################################################################
+        result.setText(value)
+        result.putClientProperty("html.disable", None)
+
+        return result
+
 class ConfigTableModel(DefaultTableModel):
   def __init__(self, data, headings):
     DefaultTableModel.__init__(self, data, headings)
@@ -238,6 +278,24 @@ class IssueTable(JTable):
           self.addMouseListener(summary_unique_mouse_listener())
         elif table_type == "summary_all_endpoints":
           self.addMouseListener(summary_all_mouse_listener())
+
+    '''def getTableCellRendererComponent(
+        self,
+        table,               # JTable  - table containing value
+        value,               # Object  - value being rendered
+        isSelected,          # boolean - Is value selected?
+        hasFocus,            # boolean - Does this cell have focus?
+        row,                 # int     - Row # (0..N)
+        col                  # int     - Col # (0..N)
+    ) :
+        comp = self.DTCR.getTableCellRendererComponent(
+            table, value, isSelected, hasFocus, row, col
+        )
+        result = self.result
+        result.setText(value)
+        result.putClientProperty("html.disable", None)
+
+        return result'''
 
 
 #este es para los filtros, que al borrar el texto se ponga la hint, pero no funciona, mejor pasar de ello
@@ -1820,6 +1878,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req, "tab")
+    self.table_tab_req.getColumnModel().getColumn(0).setCellRenderer(RawHtmlRenderer())
+    self.table_tab_req.getColumnModel().getColumn(1).setCellRenderer(RawHtmlRenderer())
     self.table_tab_req.putClientProperty("html.disable", None)
     #im = self.table_tab_req.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
     #im.put(KeyStroke.getKeyStroke("DOWN"), self.printxx)
@@ -1830,12 +1890,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.model_tab_resp = IssueTableModel([["",""]], self.colNames)
     self.table_tab_resp = IssueTable(self.model_tab_resp, "tab")
+    self.table_tab_resp.getColumnModel().getColumn(0).setCellRenderer(RawHtmlRenderer())
+    self.table_tab_resp.getColumnModel().getColumn(1).setCellRenderer(RawHtmlRenderer())
 
     self.table_tab_resp.getColumnModel().getColumn(0).setPreferredWidth(100)
     self.table_tab_resp.getColumnModel().getColumn(1).setPreferredWidth(100)
 
     self.model_tab_meta = IssueTableModel([["",""]], self.colNames_meta)
     self.table_tab_meta = IssueTable(self.model_tab_meta, "meta")
+    self.table_tab_meta.getColumnModel().getColumn(0).setCellRenderer(RawHtmlRenderer())
+    self.table_tab_meta.getColumnModel().getColumn(1).setCellRenderer(RawHtmlRenderer())
 
     self.table_tab_meta.getColumnModel().getColumn(0).setPreferredWidth(100)
     self.table_tab_meta.getColumnModel().getColumn(1).setPreferredWidth(100)
@@ -1861,6 +1925,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.model_unique_endpoints = IssueTableModel([[""]], ["Unique endpoints for selected host"])
     self.table_unique_endpoints = IssueTable(self.model_unique_endpoints, "endpoints")
+    self.table_unique_endpoints.getColumnModel().getColumn(0).setCellRenderer(RawHtmlRenderer())
 
     self.model_all_endpoints = IssueTableModel([[""]], ["All endpoints for selected host"])
     self.table_all_endpoints = IssueTable(self.model_all_endpoints, "endpoints")
