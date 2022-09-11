@@ -1797,7 +1797,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridy = y_pos
     c.anchor = GridBagConstraints.WEST
     #self.filter_but = JButton('<html><b><font color="white">Update table</font></b></html>', actionPerformed = self.filter_entries)
-    self.filter_but = JButton('<html><b><font color="white">Update table</font></b></html>', actionPerformed = self.filter_entries)
+    self.filter_but = JButton('<html><b><font color="white">Update</font></b></html>', actionPerformed = self.filter_entries)
     self.filter_but.putClientProperty("html.disable", None)
     self.filter_but.setBackground(Color(210,101,47))
     JPanel1.add( self.filter_but, c )
@@ -1873,8 +1873,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.BOTH
 
     #todas las columnas del archivo: header name && description && example &&  (permanent, no se que es esto) &&
-    self.colNames = ('<html><b>Header name</b></html>','<html><b>Appears in Host:</b></html>')
-    self.colNames_meta = ('<html><b>Meta header identifier</b></html>','<html><b>Meta header content</b></html>')
+    self.colNames = ('Header name','Appears in Host')
+    self.colNames_meta = ('Meta header identifier','Meta header content')
 
     self.model_tab_req = IssueTableModel([["",""]], self.colNames)
     self.table_tab_req = IssueTable(self.model_tab_req, "tab")
