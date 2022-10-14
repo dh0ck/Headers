@@ -1,10 +1,12 @@
 from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
+
+import threading
 import java
 import subprocess
 import shutil, glob, re, sys, os
 from time import sleep
-from javax.swing import JFrame, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox, JRadioButton, ButtonGroup, KeyStroke
+from javax.swing import JFrame, JProgressBar, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox, JRadioButton, ButtonGroup, KeyStroke
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
@@ -886,7 +888,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     print(output)
     self.python_msg.setText(output)
 
-
   def create_docx_frame(self):
     self.docx_frame = JFrame("Configure .docx report")
     self.docx_frame.setLayout(GridBagLayout())
@@ -1515,12 +1516,22 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.update_endpoints(self.endpoint_table1)
     return
 
-  def update_endpoints(self, endpoint_table):
+  def determinate_progress(self):
+    #self.progressBar.setIndeterminate(1)
+    self.progressBar.setIndeterminate(1)
+    self.framewait.setLocationRelativeTo(None)
+    self.framewait.setVisible(True)
+    self.framewait.toFront()
+    self.framewait.setAlwaysOnTop(True) 
+
+  def update_endpoints_worker(self, endpoint_table):
     """Update the "Unique endpoints" table and the "All endpoints" table when a row in the Header-Host table (at the left side of the extension tab) is clicked. The endpoint tables show all the endpoints that exist in the Burp history for which the Host request header is the one clicked on the Header-Host table."""
 
     self.model_unique_endpoints.setRowCount(0)
     self.model_all_endpoints.setRowCount(0)
     self.unique_entries = []
+    self.progressBar.setIndeterminate(0)
+    self.progressBar.setValue(0)
 
     
     total_security = 0
@@ -1545,7 +1556,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         if keyword.lower().strip() in entry[0].lower() or self.filter_endpoints.getText() == "To filter endpoints enter keywords (separated by a comma)" or self.filter_endpoints.getText() == "":
           self.model_all_endpoints.addRow(entry)
 
-    for entry in endpoint_table:
+    for k_progress, entry in enumerate(endpoint_table):
+      if k_progress % 5 == 0:
+        print(k_progress, len(endpoint_table))
+        self.progressBar.setValue(100 * k_progress // len(endpoint_table))
+
       entry[0] = self.apply_regex(entry[0])
       for keyword in keywords:
         if keyword.lower().strip() in entry[0].lower() or self.filter_endpoints.getText() == "To filter endpoints enter keywords (separated by a comma)" or self.filter_endpoints.getText() == "":
@@ -1564,9 +1579,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             symbols_color = {}
             for color in colors.keys():
 
-        
-    
-    
               if color == "security":
                 total = total_security
                 #total = self.total_security_headers
@@ -1593,7 +1605,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.table_unique_endpoints.setRowSelectionInterval(0,0) 
     self.clicked_endpoint(self.table_unique_endpoints, False)
+    self.framewait.setVisible(False)
     return
+
+  def update_endpoints(self, event):
+    thread_show_progress = threading.Thread(target=self.determinate_progress)
+    update_endpoints_worker = threading.Thread(target=self.update_endpoints_worker, args=(endpoint_table,))
+    thread_show_progress.start()
+    update_endpoints_worker.start()
 
   def addRB( self, pane, bg, text ):
     """Add radio buttons"""
@@ -1783,6 +1802,20 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   
   def getUiComponent(self):
     """Builds the interface of the extension tab."""
+
+    self.framewait = JFrame()
+    self.panelwait = JPanel()
+    self.panelwait.setLayout(BoxLayout(self.panelwait, BoxLayout.Y_AXIS))
+    self.framewait.setSize(350, 100)
+    self.panelwait.add(JLabel("Please wait, may take some time..."))
+    self.panelwait.add(JLabel(" "))
+    self.progressBar = JProgressBar()
+    self.progressBar.setMaximum(100)
+    self.progressBar.setMinimum(1)
+    self.panelwait.add(self.progressBar)
+    self.framewait.add(self.panelwait)
+
+
 
     self.create_summary()
 
@@ -2110,7 +2143,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.last_len_meta = len(history2)
     return
 
-  def filter_entries(self, event):
+  def filter_entries_worker(self):
     """Applies the supplied filter(s) to the Header-Host table. If no filters are applied, all available entries are shown."""
     self.clear_table()
     self.read_headers()
@@ -2122,7 +2155,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     global history1
     history1 = []
     history1 = self._callbacks.getProxyHistory()
+    self.progressBar.setIndeterminate(0)
     for k_progress, item in enumerate(history1): # ver si puedo coger el index de la request para ponerlo luego en la endpoint table
+      if k_progress % 20 == 0:
+        self.progressBar.setValue(100 * k_progress // len(history1))
+
       # Sometimes some strange errors happen for some requests, with this we just skip them. 
       '''algunas fallan en algun punto de aqui dentro'''
       try:
@@ -2230,7 +2267,14 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       self.config_dict["last_filter_type"] = self.preset_filters.getSelectedItem()
       self.update_config()
 
+    self.framewait.setVisible(False)
     return
+
+  def filter_entries(self, event):
+    thread_show_progress = threading.Thread(target=self.determinate_progress)
+    filter_entries_worker = threading.Thread(target=self.filter_entries_worker)
+    thread_show_progress.start()
+    filter_entries_worker.start()
 
   def createMenuItems(self, context_menu):
     """Adds an entry to Burp's context menu, when it is clicked the floating window with headers information of the selected item(s) in Burp history is shown"""
