@@ -419,7 +419,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.potentially_dangerous_headers = [] 
 
     for line in self.table_config_security:
-        self.security_headers.append(line[1].strip('\n'))
+        self.security_headers.append(line[1].strip('\n').lower())
     
     for line in self.table_config_dangerous:
         self.dangerous_headers.append(line[1].strip('\n'))
@@ -1154,6 +1154,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       val = tbl.getModel().getDataVector().elementAt(0)
       tbl.setRowSelectionInterval(0, 0)
 
+    # lo siguiente es porque se selecciona (en principio) un endpoint de la lista de uniques, que han sido modificados, y hay que encontrar el bueno
     for item in history1:
       request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
       req_headers = request.split('\r\n')
@@ -1238,8 +1239,19 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
           response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
-          for resp_head in sorted(resp_headers[1:]):
 
+          missing_header_array = []
+          for i in range(self.model_tab_config_security.getRowCount()):
+            if self.model_tab_config_security.getValueAt(i,0):
+              missing_header_array.append(self.model_tab_config_security.getValueAt(i,1))
+
+          missing_header_array = list(map(lambda x: x.lower(), missing_header_array))
+          for resp_head in sorted(resp_headers[1:]):
+            print(resp_head)
+            try:
+              missing_header_array.remove(resp_head.split(":")[0].lower())
+            except:
+              pass
             extra_symbol = self.extra_symbol(resp_head)
 
             resp_head = resp_head.replace('<','< ') #este es porque algunos headers tenian links en html y se renderizaba en cosas raras
@@ -1252,11 +1264,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             else:
               buffer += '<li><b>' + resp_head_name + extra_symbol + ":</b> " + resp_head_value + "<br></li>"
 
+          buffer += '</ul><hr><b>Missing security headers:</b><ul>'
+          for missing_header in missing_header_array:
+            buffer += '<li><b><font color=\"yellow\"> [ - ] </font> {}</b>'.format(missing_header.title())
+
           buffer += '</ul>'
           buffer += '<br><hr><font color=\"white\"><b>*Note:</b> Some enpoints don\'t return some headers sometimes. If you can\'t find the header you selected on the table to the left, please select other endpoint, perhaps from the \"All Endpoints\" tab.</font><br><hr>' 
           buffer += '<br>Color legend for headers names (check yourself if the value is correct):'
           buffer += '<ul>'
           buffer += '<li><b><font color="#00FF00"> [ + ] </font><b>: Security header</li>'
+          buffer += '<li><b><font color="yellow"> [ - ] </font><b>: Missing security header</li>'
           buffer += '<li><b><font color="#FF0000"> [ X ] </font><b>: Dangerous or too verbose header</li>'
           buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
           self.header_summary.setText(buffer + "</html>")
