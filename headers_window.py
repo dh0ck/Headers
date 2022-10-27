@@ -241,7 +241,20 @@ class summary_all_mouse_listener(IssueTableMouseListener):
   def mouseClicked(self, event):
     print('summary all clicked, go to history and show request/response')
 
-class SummaryTableModel(DefaultTableModel):
+class SummaryTableModel_left(DefaultTableModel):
+  def __init__(self, data, headings):
+    DefaultTableModel.__init__(self, data, headings)
+  
+  def getColumnClass(self, col):
+    # columnas: add to report?, Host
+    return [Boolean, String][col]
+  
+  def isCellEditable(self, row, column):
+    """Returns True if cells are editable."""
+    canEdit = [True, False]
+    return canEdit[column]
+
+class SummaryTableModel_right(DefaultTableModel):
   def __init__(self, data, headings):
     DefaultTableModel.__init__(self, data, headings)
   
@@ -252,9 +265,10 @@ class SummaryTableModel(DefaultTableModel):
     # - dangerous
     # - potentially dangerous
     # - http verbs
-    # - cookies without flgas
+    # - cookies without flags
 
-    return [Integer, Boolean, String, String, String][col]
+    return [Boolean, String, String, String][col]
+    #return [Integer, Boolean, String, String, String][col]
   
   def isCellEditable(self, row, column):
     """Returns True if cells are editable."""
@@ -885,7 +899,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       raise("Error identifying operating system type. Provide path to Python3 binary.")
 
     output = proc.stdout.read()
-    print(output)
+    #print(output)
     self.python_msg.setText(output)
 
   def create_docx_frame(self):
@@ -950,6 +964,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.selected_host = ""
     self.selected_header = ""
     self.is_meta = False
+    self.dic_host_unique_endpoint = {}
     
     return
     
@@ -1021,7 +1036,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def UpdateHeaders(self, event):
     """Get the latest version of the request and response headers file from the Github repo. The urllib2 takes some seconds to load, so it's only loaded if this function is ever called, to improve performance."""
-    from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension
+    from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension. esta habia que instalarla o viene con jython por defecto? poner instrucciones si hace falta!!!
     print("Backing up old header files...")
     try:
       req_header_files = glob.glob('request_headers.txt*')
@@ -1240,16 +1255,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
           resp_headers = response.split('\r\n')
 
-          missing_header_array = []
+          self.missing_header_array = []
           for i in range(self.model_tab_config_security.getRowCount()):
             if self.model_tab_config_security.getValueAt(i,0):
-              missing_header_array.append(self.model_tab_config_security.getValueAt(i,1))
+              self.missing_header_array.append(self.model_tab_config_security.getValueAt(i,1))
 
-          missing_header_array = list(map(lambda x: x.lower(), missing_header_array))
+          self.missing_header_array = list(map(lambda x: x.lower(), self.missing_header_array))
           for resp_head in sorted(resp_headers[1:]):
-            print(resp_head)
+            #print(resp_head)
             try:
-              missing_header_array.remove(resp_head.split(":")[0].lower())
+              self.missing_header_array.remove(resp_head.split(":")[0].lower())
             except:
               pass
             extra_symbol = self.extra_symbol(resp_head)
@@ -1265,15 +1280,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               buffer += '<li><b>' + resp_head_name + extra_symbol + ":</b> " + resp_head_value + "<br></li>"
 
           buffer += '</ul><hr><b>Missing security headers:</b><ul>'
-          for missing_header in missing_header_array:
-            buffer += '<li><b><font color=\"yellow\"> [ - ] </font> {}</b>'.format(missing_header.title())
+          for missing_header in self.missing_header_array:
+            buffer += '<li><b><font color=\"orange\"> [ - ] </font> {}</b>'.format(missing_header.title())
 
           buffer += '</ul>'
           buffer += '<br><hr><font color=\"white\"><b>*Note:</b> Some enpoints don\'t return some headers sometimes. If you can\'t find the header you selected on the table to the left, please select other endpoint, perhaps from the \"All Endpoints\" tab.</font><br><hr>' 
           buffer += '<br>Color legend for headers names (check yourself if the value is correct):'
           buffer += '<ul>'
           buffer += '<li><b><font color="#00FF00"> [ + ] </font><b>: Security header</li>'
-          buffer += '<li><b><font color="yellow"> [ - ] </font><b>: Missing security header</li>'
+          buffer += '<li><b><font color="orange"> [ - ] </font><b>: Missing security header</li>'
           buffer += '<li><b><font color="#FF0000"> [ X ] </font><b>: Dangerous or too verbose header</li>'
           buffer += '<li><b><font color="#4FC3F7"> [ ? ] </font><b>: Potentially dangerous header</li>'
           self.header_summary.setText(buffer + "</html>")
@@ -1533,7 +1548,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.update_endpoints(self.endpoint_table1)
     return
 
-  def determinate_progress(self):
+  def determine_progress(self):
     #self.progressBar.setIndeterminate(1)
     self.progressBar.setIndeterminate(1)
     self.framewait.setLocationRelativeTo(None)
@@ -1575,7 +1590,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     for k_progress, entry in enumerate(endpoint_table):
       if k_progress % 5 == 0:
-        print(k_progress, len(endpoint_table))
         self.progressBar.setValue(100 * k_progress // len(endpoint_table))
 
       entry[0] = self.apply_regex(entry[0])
@@ -1615,6 +1629,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
             #self.model_unique_endpoints.addRow( [symbols_string +  entry[0] + '</html>'])
             #print('<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>')
             self.model_unique_endpoints.addRow( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
+            '''if host in self.dic_host_unique_endpoint.keys():
+              self.dic_host_unique_endpoint[host] = [entry[0]]
+            else:
+              self.dic_host_unique_endpoint[host].append(entry[0])'''
+              
+
             #print( [ '<html>' + symbols_string + self.replace_symbol(entry[0]) + '</html>' ])
             #self.model_unique_endpoints.addRow( [ '<html>' + entry[0].replace('[*]', '<font color="{}">[*]</font>'.format(self.color1)) + '</html>'])
             #self.model_unique_endpoints.addRow( [ entry[0] ])
@@ -1626,7 +1646,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def update_endpoints(self, event):
-    thread_show_progress = threading.Thread(target=self.determinate_progress)
+    thread_show_progress = threading.Thread(target=self.determine_progress)
     update_endpoints_worker = threading.Thread(target=self.update_endpoints_worker, args=(endpoint_table,))
     thread_show_progress.start()
     update_endpoints_worker.start()
@@ -1690,7 +1710,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       # we need to remove from the last selected to the first selected to avoid confusions when the table model resizes every time we remove an element
       for i in selected[::-1]:
         self.initial_count_security_headers -= 1
-        print(self.initial_count_security_headers)
+        #print(self.initial_count_security_headers)
         self.model_tab_config_security.removeRow(i)
 
     if selected_tab == 1:
@@ -1751,13 +1771,130 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.docx_frame.toFront()
     self.docx_frame.setAlwaysOnTop(True)
 
+  def summary_update_hosts(self, event):
+    unique_hosts = set([x[2] for x in self.header_host_table])
+    self.output_hosts_summary_model.setRowCount(0)
+    for host in unique_hosts:
+      # para test los pongo todos a true, normalmente iran a false, pero intentar poner una forma de seleccionar todos con un boton
+      self.output_hosts_summary_model.addRow([True, host])
+      #self.output_hosts_summary_model.addRow([False, host])
+
+  def data_from_request(self, item):  
+    """ Returns header data from a request-response object """
+    request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
+    req_headers = request.split('\r\n')
+    #iter_host = self.find_host(req_headers)
+    endpoint = req_headers[0]
+    unique_endpoint = self.apply_regex(endpoint.split(' ')[1])
+    try: #some responses return None and the next split fails, for that reason the try-except is used
+      response = self._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
+    except:
+      response = ''
+    resp_headers = response.split('\r\n')
+    return req_headers, endpoint, response, resp_headers, unique_endpoint
+  
+  def summary_update_endpoints_worker(self):
+    self.selected_output_hosts = []
+    self.unique_endpoints_summary_model.setRowCount(0)
+    self.progressBar.setIndeterminate(0)
+    self.progressBar.setValue(0)
+
+    '''self.dic_summary es un diccionario de diccionarios, que contiene como keys los issue_types, y como
+    valor para cada key otra diccionario, cuyas keys son los host y para cada host el value es una lista
+    de las unique urls afectadas'''
+    self.dic_summary = {
+                        "Missing Security Headers":{},
+                        "Dangerous Headers":{},
+                        "Potentially Dangerous Headers":{},
+                        "Bad HTTP Methods":{},
+                        "Cookies Without Flags":{}
+                        }
+
+    # adds the selected hosts to a new array, works well
+    for i in range(self.output_hosts_summary_model.getRowCount()):
+      if self.output_hosts_summary_model.getValueAt(i,0) == True:
+        to_add = self.output_hosts_summary_model.getValueAt(i,1)
+        self.selected_output_hosts.append(to_add)
+
+
+
+    for k_progress, item in enumerate(history1):
+      if k_progress % 10 == 0:
+        self.progressBar.setValue(100 * k_progress // len(history1))
+
+      host = item.getHost()
+
+      req_headers, endpoint, response, resp_headers, unique_endpoint = self.data_from_request(item)
+      try:
+        print(host,endpoint)
+      except:
+        print('===================================================================')
+
+      if 'admin' in host.lower():
+        print('00000000000',unique_endpoint)
+      #if 'login' in unique_endpoint.lower():
+      #  print('kkk',host, unique_endpoint)
+
+      if host in self.selected_output_hosts:
+        req_headers, endpoint, response, resp_headers, unique_endpoint = self.data_from_request(item)
+
+        ### - bad http methods
+        '''http_method = endpoint.split(' ')[0]
+        if http_method in ['PUT', 'TRACE', 'DELETE']:
+          self.unique_endpoints_summary_model.addRow([True, "Bad HTTP methods", host, self.apply_regex(url)])
+          if host not in self.dic_summary["Bad HTTP Methods"].keys() : #si no exite el host, anadelo
+            self.dic_summary["Bad HTTP Methods"][host] = []
+          if self.apply_regex(url) not in self.dic_summary["Bad HTTP Methods"][host]: # si para ese host no esta la url unique, anadela
+            self.dic_summary["Bad HTTP Methods"][host].append("Method: " + http_method + "; URL: " + self.appl_regex(url))'''
+
+
+        ##################################### HAY MAS FLAGS, MIRAR AQUI: https://www.invicti.com/learn/cookie-security-flags/
+        for header in resp_headers:
+          
+          ### - cookies without flags
+          if 'set-cookie' in header.lower():
+            if 'secure' not in header.lower():
+              if host not in self.dic_summary["Cookies Without Flags"].keys():
+                self.dic_summary["Cookies Without Flags"][host] = []
+
+              string_to_add = "Missing Secure - URL: " + unique_endpoint
+              if string_to_add not in self.dic_summary["Cookies Without Flags"][host]:
+                self.unique_endpoints_summary_model.addRow([True, "Cookies without flags", host, string_to_add])
+                self.dic_summary["Cookies Without Flags"][host].append(string_to_add)
+              
+              #print(self.dic_summary)
+
+            if 'httponly' not in header.lower():
+              if host not in self.dic_summary["Cookies Without Flags"].keys():
+                self.dic_summary["Cookies Without Flags"][host] = []
+
+              string_to_add = "Missing HttpOnly - URL: " + unique_endpoint
+              if string_to_add not in self.dic_summary["Cookies Without Flags"][host]:
+                self.unique_endpoints_summary_model.addRow([True, "Cookies without flags", host, string_to_add])
+                self.dic_summary["Cookies Without Flags"][host].append(string_to_add)
+              
+            
+          ### - missing security headers
+
+          ### - dangerous header
+
+          ### - potentially dangerous
+    self.framewait.setVisible(False)
+
+
+  def summary_update_endpoints(self, event):
+    thread_show_progress = threading.Thread(target=self.determine_progress)
+    summary_update_endpoints_worker = threading.Thread(target=self.summary_update_endpoints_worker)
+    thread_show_progress.start()
+    summary_update_endpoints_worker.start()
+
   def create_summary(self):
     self.summary_frame = JFrame("Summary")
     self.summary_frame.setLayout(BorderLayout())
     self.summary_frame.setSize(800, 600)
     self.summary_frame.setLocationRelativeTo(None)  
 
-    colNames = ("Index", "Report?", "Issue type", "Host", "Unique endpoint" )
+    colNames_left = ("Include?", "Host" )
 
     c = GridBagConstraints()
     c.gridx = 0
@@ -1766,8 +1903,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.weighty = 1
     c.fill = GridBagConstraints.BOTH
     
-    self.unique_endpoints_summary_model = SummaryTableModel([[123,False,"asdfl", "qewr", "zxcv"]], colNames)
-    summary_unique_table = JTable(self.unique_endpoints_summary_model)
+    self.output_hosts_summary_model = SummaryTableModel_left([], colNames_left)
+    self.output_hosts_summary_table = JTable(self.output_hosts_summary_model)
+    self.output_hosts_summary_table.getColumnModel().getColumn(0).setPreferredWidth(60)
+    self.output_hosts_summary_table.getColumnModel().getColumn(0).setMaxWidth(60)
 
     c.fill = GridBagConstraints.HORIZONTAL  
     c.gridy += 1
@@ -1775,43 +1914,64 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     c.fill = GridBagConstraints.BOTH
     c.gridy += 1
-    self.all_endpoints_summary_model = SummaryTableModel([[234,True,"asadfdfl", "xxx", "vvv"]], colNames)
-    summary_all_table = JTable(self.all_endpoints_summary_model)
+    colNames_right = ("Report?", "Issue type", "Host", "Details" )
+    #colNames_right = ("Index", "Report?", "Issue type", "Host", "Unique endpoint" )
+    self.unique_endpoints_summary_model = SummaryTableModel_right([], colNames_right)
 
-    north_panel = JPanel(GridBagLayout())
+    summary_all_table = JTable(self.unique_endpoints_summary_model)
+
+    summary_all_table.getColumnModel().getColumn(0).setPreferredWidth(60)
+    summary_all_table.getColumnModel().getColumn(0).setMaxWidth(60)
+    summary_all_table.getColumnModel().getColumn(1).setPreferredWidth(60)
+    summary_all_table.getColumnModel().getColumn(2).setPreferredWidth(60)
+    summary_all_table.getColumnModel().getColumn(3).setPreferredWidth(60)
+
+    left_panel = JPanel(GridBagLayout())
     c = GridBagConstraints()
     c.anchor = GridBagConstraints.WEST
     
-    north_panel.add(JButton("Update"), c)
+    button_update_hosts = JButton('<html><font color="white">Update Hosts</font></html>',actionPerformed=self.summary_update_hosts)
+    button_update_for_selected_hosts = JButton('<html><font color="white">Update for selected Hosts</font></html>', actionPerformed=self.summary_update_endpoints)
+    
+    button_update_hosts.putClientProperty("html.disable", None)
+    button_update_for_selected_hosts.putClientProperty("html.disable", None)
+
+    button_update_hosts.setBackground(Color(10,101,247))
+    button_update_for_selected_hosts.setBackground(Color(10,101,247))
+
+    left_panel.add(button_update_hosts,c)
+    left_panel.add(button_update_for_selected_hosts,c)
+
+
+
+
+
     c.weightx = 1
     checkbox_missing_security = JCheckBox("Missing security headers")
     checkbox_potentially_dangerous = JCheckBox("Potentially Dangerous headers")
     checkbox_dangerous = JCheckBox("Dangerous or verbose headers")
-    north_panel.add(checkbox_missing_security, c)
-    north_panel.add(checkbox_potentially_dangerous, c)
-    north_panel.add(checkbox_dangerous, c)
-    self.summary_frame.add(north_panel, BorderLayout.NORTH)
+    left_panel.add(checkbox_missing_security, c)
+    left_panel.add(checkbox_potentially_dangerous, c)
+    left_panel.add(checkbox_dangerous, c)
+    self.summary_frame.add(left_panel, BorderLayout.NORTH)
 
-    split = JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(summary_unique_table), JScrollPane(summary_all_table))
-    split.setDividerLocation(200)
+    split = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, JScrollPane(self.output_hosts_summary_table), JScrollPane(summary_all_table))
+    split.setDividerLocation(150)
     self.summary_frame.add(split, BorderLayout.CENTER)  
 
-    south_panel = JPanel(GridBagLayout())
+    right_panel = JPanel(GridBagLayout())
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
     c.anchor = GridBagConstraints.WEST
     c.weightx = 0
-    south_panel.add(JButton("Choose output file"), c)
+    right_panel.add(JButton("Choose output file"), c)
     c.weightx = 1
-    south_panel.add(JTextField("Output file"), c)
+    right_panel.add(JTextField("Output file"), c)
     c.anchor = GridBagConstraints.WEST
     c.weightx = 0
-    south_panel.add(JButton(".docx report", actionPerformed = self.show_docx), c)
-    self.summary_frame.add(south_panel, BorderLayout.SOUTH)
+    right_panel.add(JButton(".docx report", actionPerformed = self.show_docx), c)
+    self.summary_frame.add(right_panel, BorderLayout.SOUTH)
     
-  def printxx(self, event):
-    print('down xx')
-
   def show_summary(self, event):
     self.summary_frame.setVisible(True)
     self.summary_frame.toFront()
@@ -1935,7 +2095,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     #im.put(KeyStroke.getKeyStroke("DOWN"), self.printxx)
     #im.put(KeyStroke.getKeyStroke("DOWN", 0), self.printxx)
 
-    self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(100)
+    self.table_tab_req.getColumnModel().getColumn(0).setPreferredWidth(130)
+    self.table_tab_req.getColumnModel().getColumn(0).setMaxWidth(130)
     self.table_tab_req.getColumnModel().getColumn(1).setPreferredWidth(100)
 
     self.model_tab_resp = IssueTableModel([["",""]], self.colNames)
@@ -2000,6 +2161,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.splt_2 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,self.endpoint_tabs, self.summary_panel)
 
     self.splt_1 = JSplitPane(JSplitPane.HORIZONTAL_SPLIT,JScrollPane(self.tab_tabs), self.splt_2) 
+    #self.splt_1.setDividerLocation(300)
     panel.add(self.splt_1, c)
 
     # ================== Add saving to file ===================== #
@@ -2288,7 +2450,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     return
 
   def filter_entries(self, event):
-    thread_show_progress = threading.Thread(target=self.determinate_progress)
+    thread_show_progress = threading.Thread(target=self.determine_progress)
     filter_entries_worker = threading.Thread(target=self.filter_entries_worker)
     thread_show_progress.start()
     filter_entries_worker.start()
