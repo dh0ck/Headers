@@ -2,16 +2,15 @@ from burp import IBurpExtender, ITab
 from burp import IContextMenuFactory
 
 import threading
-import java
-import subprocess
-import shutil, glob, re, sys, os
-from time import sleep
+#import java
+import shutil, glob, re, sys, os, subprocess
+#from time import sleep
 from javax.swing import JFrame, JProgressBar, JSplitPane, JTable, JScrollPane, JPanel, BoxLayout, WindowConstants, JLabel, JMenuItem, JTabbedPane, JButton, JTextField, JTextArea, SwingConstants, JEditorPane, JComboBox, DefaultComboBoxModel, JFileChooser, ImageIcon, JCheckBox, JRadioButton, ButtonGroup, KeyStroke
 from javax.swing.table import DefaultTableModel, DefaultTableCellRenderer, TableCellRenderer
 from java.awt import BorderLayout, Dimension, FlowLayout, GridLayout, GridBagLayout, GridBagConstraints, Point, Component, Color  # quitar los layout que no utilice
 from java.util import List, ArrayList
 from java.lang import Boolean, String, Integer
-from java.awt.event.MouseEvent import getPoint
+#from java.awt.event.MouseEvent import getPoint
 from java.awt.event import MouseListener, FocusListener
 
 
@@ -888,19 +887,29 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     # subprocess que guarde en una variable output de python -c import ...
     
     os_type = sys.platform.getshadow()
-    win_python_command = 'py --version'
+    win_python_command = "py --version"
     linux_python_command = 'python3 --version'
     win_python_command = 'py docx.py'
+    print(os_type)
     if 'win' in os_type:
-      proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
+      #proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
+      proc = subprocess.Popen("py --version", stdout=subprocess.PIPE)
     elif 'linux' in os_type:
-      proc = subprocess.Popen(linux_python_command, stdout=subprocess.PIPE)
+      #proc = subprocess.Popen(linux_python_command, stdout=subprocess.PIPE)
+      proc = subprocess.Popen("python3 --version", stdout=subprocess.PIPE)
     else:
       raise("Error identifying operating system type. Provide path to Python3 binary.")
 
+
+    if 'docxtpl' not in sys.modules.keys():
+      os.system('pip install docxtpl')
+      #subprocess.Popen('pip install docxtpl',stdout=subprocess.PIPE)
+
+    docxtpl_version = subprocess.Popen('''python -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"''',stdout=subprocess.PIPE)
+
     output = proc.stdout.read()
-    #print(output)
-    self.python_msg.setText(output)
+    #self.python_msg.setText(output.strip('\r\n') ) 
+    self.python_msg.setText(output.strip('\r\n') + ' ' + docxtpl_version.stdout.read())
 
   def create_docx_frame(self):
     self.docx_frame = JFrame("Configure .docx report")
