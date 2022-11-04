@@ -1849,7 +1849,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def summary_update_hosts(self, event):
     unique_hosts = set([x[2] for x in self.header_host_table])
     self.output_hosts_summary_model.setRowCount(0)
-    for host in unique_hosts:
+    for host in sorted(unique_hosts):
       # para test los pongo todos a true, normalmente iran a false, pero intentar poner una forma de seleccionar todos con un boton
       self.output_hosts_summary_model.addRow([True, host])
       #self.output_hosts_summary_model.addRow([False, host])
@@ -1962,24 +1962,30 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
           ### - dangerous header
-          
           if self.checkbox_dangerous.isSelected():
-            print(header)
             for dangerous_header in self.dangerous_headers:
               if dangerous_header in header.lower():
                 if host not in self.dic_summary["Dangerous Headers"].keys():
                   self.dic_summary["Dangerous Headers"][host] = []
 
                 string_to_add = '"{0}" header - URL: {1}'.format(dangerous_header.title(), self.check_depth(unique_endpoint, self.depth))
-                print(string_to_add)
-                print(self.dic_summary)
                 if string_to_add not in self.dic_summary["Dangerous Headers"][host]:
                   self.unique_endpoints_summary_model.addRow([True, "Dangerous header", host, string_to_add])
                   self.dic_summary["Dangerous Headers"][host].append(string_to_add)
-                print('xxxxxxxxxx')
+          
           ### - potentially dangerous
-          if self.check_box_potentially_dangerous.isSelected():
-            pass
+          if self.checkbox_potentially_dangerous.isSelected():
+            for potentially_dangerous_header in self.potentially_dangerous_headers:
+              if potentially_dangerous_header in header.lower():
+                if host not in self.dic_summary["Potentially Dangerous Headers"].keys():
+                  self.dic_summary["Potentially Dangerous Headers"][host] = []
+
+                string_to_add = '"{0}" header - URL: {1}'.format(potentially_dangerous_header.title(), self.check_depth(unique_endpoint, self.depth))
+                if string_to_add not in self.dic_summary["Potentially Dangerous Headers"][host]:
+                  self.unique_endpoints_summary_model.addRow([True, "Potentially Dangerous header", host, string_to_add])
+                  self.dic_summary["Potentially Dangerous Headers"][host].append(string_to_add)
+ 
+
 
     self.framewait.setVisible(False)
 
