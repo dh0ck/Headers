@@ -379,7 +379,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f = open('dangerous_headers.txt','r')
     self.total_dangerous_headers = len(f.readlines())
     f.close()
-
+    f = open('cookie_flags.txt','r')
+    self.total_cookie_flags = len(f.readlines())
+    f.close()
+    
     # UI colors
     if self.UI_theme == "dark":
       f = open('UI_theme_dark.txt', 'r')
@@ -413,6 +416,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.table_config_security = []
     self.table_config_dangerous = []
     self.table_config_potentially_dangerous = []
+    self.table_config_cookie_flags = []
     
 
     for i in range(self.initial_count_security_headers):
@@ -427,9 +431,19 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
         self.table_config_potentially_dangerous.append([True, self.model_tab_config_potentially_dangerous.getValueAt(i,1)]) 
 
+    print('333333333')
+    print(self.initial_count_cookie_flags)
+    print(self.model_tab_config_cookie_flags, self.model_tab_config_cookie_flags.getValueAt(0,0))
+    for i in range(self.initial_count_cookie_flags):
+
+      if self.model_tab_config_cookie_flags.getValueAt(i,0):
+        self.table_config_cookie_flags.append([True, self.model_tab_config_cookie_flags.getValueAt(i,1)]) 
+
+    print('555555555')
     self.dangerous_headers = [] 
     self.security_headers = [] 
     self.potentially_dangerous_headers = [] 
+    self.cookie_flags = []
 
     for line in self.table_config_security:
         self.security_headers.append(line[1].strip('\n').lower())
@@ -440,51 +454,79 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for line in self.table_config_potentially_dangerous:
         self.potentially_dangerous_headers.append(line[1].strip('\n'))
 
+    for line in self.table_config_cookie_flags:
+        self.cookie_flags.append(line[1].strip('\n'))
+
   def make_chosen_headers_permanent(self, event):
+    self.security_headers = []
     f = open("security_headers.txt","w")
     for i in range(self.initial_count_security_headers):
       #print(str(i) + '/' + str(self.initial_count_security_headers))
       if i < self.initial_count_security_headers - 1:
         if self.model_tab_config_security.getValueAt(i,0):
           f.write("1 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
+          self.security_headers.append(self.model_tab_config_security.getValueAt(i,1))
         else:
           f.write("0 " + self.model_tab_config_security.getValueAt(i,1) + '\n')
       else:
         if self.model_tab_config_security.getValueAt(i,0):
           f.write("1 " + self.model_tab_config_security.getValueAt(i,1))
+          self.security_headers.append(self.model_tab_config_security.getValueAt(i,1))
         else:
           f.write("0 " + self.model_tab_config_security.getValueAt(i,1))
 
     f.close()
 
     f = open("dangerous_headers.txt","w")
+    self.dangerous_headers = []
     for i in range(self.initial_count_dangerous_headers):
       if i < self.initial_count_dangerous_headers - 1:
         if self.model_tab_config_dangerous.getValueAt(i,0):
           f.write("1 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
+          self.dangerous_headers.append(self.model_tab_config_dangerous.getValueAt(i,1))
         else:
           f.write("0 " + self.model_tab_config_dangerous.getValueAt(i,1) + '\n')
       else:
         if self.model_tab_config_dangerous.getValueAt(i,0):
           f.write("1 " + self.model_tab_config_dangerous.getValueAt(i,1))
+          self.dangerous_headers.append(self.model_tab_config_dangerous.getValueAt(i,1))
         else:
           f.write("0 " + self.model_tab_config_dangerous.getValueAt(i,1))
 
     f.close()
     
     f = open("potentially_dangerous_headers.txt","w")
+    self.potentially_dangerous_headers = []
     for i in range(self.initial_count_potentially_dangerous_headers):
       if i < self.initial_count_potentially_dangerous_headers - 1:
         if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
           f.write("1 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
+          self.potentially_dangerous_headers.append(self.model_tab_config_potentially_dangerous.getValueAt(i,1))
         else:
           f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1) + '\n')
       else:
         if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
           f.write("1 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1))
+          self.potentially_dangerous_headers.append(self.model_tab_config_potentially_dangerous.getValueAt(i,1))
         else:
-          f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1)
-          )
+          f.write("0 " + self.model_tab_config_potentially_dangerous.getValueAt(i,1))
+    f.close()
+
+    f = open("cookie_flags.txt","w")
+    self.cookie_flags = []
+    for i in range(self.initial_count_cookie_flags):
+      if i < self.initial_count_cookie_flags - 1:
+        if self.model_tab_config_cookie_flags.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_cookie_flags.getValueAt(i,1) + '\n')
+          self.cookie_flags.append(self.model_tab_config_cookie_flags.getValueAt(i,1))
+        else:
+          f.write("0 " + self.model_tab_config_cookie_flags.getValueAt(i,1) + '\n')
+      else:
+        if self.model_tab_config_cookie_flags.getValueAt(i,0):
+          f.write("1 " + self.model_tab_config_cookie_flags.getValueAt(i,1))
+          self.cookie_flags.append(self.model_tab_config_cookie_flags.getValueAt(i,1))
+        else:
+          f.write("0 " + self.model_tab_config_cookie_flags.getValueAt(i,1))
     f.close()
 
   def create_extra_info_window(self):
@@ -682,6 +724,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.table_config_security = []
     self.table_config_potentially_dangerous = []
     self.table_config_dangerous = []
+    self.table_config_cookie_flags = []
 
     f = open('security_headers.txt','r')
     for line in f.readlines():
@@ -690,6 +733,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.table_config_security.append([True, line.split(' ')[1].strip('\n')])
       else: 
         self.table_config_security.append([False, line.split(' ')[1].strip('\n')])
+    f.close()
 
     f = open('potentially_dangerous_headers.txt','r')
     for line in f.readlines():
@@ -698,6 +742,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.table_config_potentially_dangerous.append([True, line.split(' ')[1].strip('\n')])
       else: 
         self.table_config_potentially_dangerous.append([False, line.split(' ')[1].strip('\n')])
+    f.close()
 
     f = open('dangerous_headers.txt','r')
     for line in f.readlines():
@@ -706,8 +751,19 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.table_config_dangerous.append([True, line.split(' ')[1].strip('\n')])
       else: 
         self.table_config_dangerous.append([False, line.split(' ')[1].strip('\n')])
+    f.close()
+    
+    f = open('cookie_flags.txt','r')
+    for line in f.readlines():
+      active = line.split(' ')[0]
+      if active == '1':
+        self.table_config_cookie_flags.append([True, line.split(' ')[1].strip('\n')])
+      else: 
+        self.table_config_cookie_flags.append([False, line.split(' ')[1].strip('\n')])
+    f.close()
 
     self.config_column_names = ("Use?", "Header name")
+    self.config_column_names_flags = ("Use?", "Flag name")
 
     self.model_tab_config_security = ConfigTableModel(self.table_config_security, self.config_column_names)
     self.table_tab_config_security = JTable(self.model_tab_config_security)
@@ -717,6 +773,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.model_tab_config_dangerous = ConfigTableModel(self.table_config_dangerous, self.config_column_names)
     self.table_tab_config_dangerous = JTable(self.model_tab_config_dangerous)
+
+    self.model_tab_config_cookie_flags = ConfigTableModel(self.table_config_cookie_flags, self.config_column_names_flags)
+    self.table_tab_config_cookie_flags = JTable(self.model_tab_config_cookie_flags)
     
     self.table_tab_config_security.getColumnModel().getColumn(0).setMaxWidth(50)
     self.table_tab_config_security.getColumnModel().getColumn(1).setPreferredWidth(400)
@@ -727,6 +786,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.table_tab_config_dangerous.getColumnModel().getColumn(0).setMaxWidth(50)
     self.table_tab_config_dangerous.getColumnModel().getColumn(1).setPreferredWidth(400)
 
+    self.table_tab_config_cookie_flags.getColumnModel().getColumn(0).setMaxWidth(50)
+    self.table_tab_config_cookie_flags.getColumnModel().getColumn(1).setPreferredWidth(400)
+
     c = GridBagConstraints()
     c.fill = GridBagConstraints.HORIZONTAL
 
@@ -735,6 +797,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     dangerous_headers_tab = JPanel(GridBagLayout()) 
     dangerous_headers_tab.add(JScrollPane(self.table_tab_config_dangerous), c)
+
+    dangerous_headers_tab = JPanel(GridBagLayout()) 
+    dangerous_headers_tab.add(JScrollPane(self.table_tab_config_cookie_flags), c)
 
     potentially_dangerous_headers_tab = JPanel(GridBagLayout()) 
     potentially_dangerous_headers_tab.add(JScrollPane(self.table_tab_config_potentially_dangerous), c)
@@ -756,7 +821,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     remove_header_from_category_button.setForeground(Color.WHITE)
     remove_header_from_category_button.setBackground(Color(210,101,47))#Color(10,101,247)) Color(210,101,47)
 
-    make_curr_selection_permanent_button = JButton("<html><b>Make current selection permanent</b></html>", actionPerformed = self.make_chosen_headers_permanent)
+    make_curr_selection_permanent_button = JButton("<html><b>Apply changes</b></html>", actionPerformed = self.make_chosen_headers_permanent)
     make_curr_selection_permanent_button.putClientProperty("html.disable", None)
     make_curr_selection_permanent_button.setForeground(Color.WHITE)
     make_curr_selection_permanent_button.setBackground(Color(10,101,247))
@@ -779,6 +844,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.categories_tabs.add("Security headers", JScrollPane(self.table_tab_config_security))
     self.categories_tabs.add("Potentially dangerous headers", JScrollPane(self.table_tab_config_potentially_dangerous))
     self.categories_tabs.add("Dangerous headers", JScrollPane(self.table_tab_config_dangerous))
+    self.categories_tabs.add("Cookie Flags", JScrollPane(self.table_tab_config_cookie_flags))
     aux_panel.add(self.categories_tabs, BorderLayout.CENTER)
     aux_panel.add(button_panel, BorderLayout.SOUTH)
 
@@ -854,10 +920,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.advanced_config_panel.add(self.main_tabs, BorderLayout.CENTER)
     # ----------------------------------------------------------------#
 
-
-
-
-
     return
 
   def show_advanced_config(self, event):
@@ -865,12 +927,13 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.advanced_config_panel.setVisible(True)
 
   def get_categories_headers_length(self):
-    """ Get how many headers are in each category when the extension is loaded. Used in read_headers() to tell it how many times it must loop to generate arrays of each category of headers"""
+    """ Get how many headers are in each category when the extension is loaded. Used in read_headers()
+    to tell it how many times it must loop to generate arrays of each category of headers"""
+
     f = open('security_headers.txt','r')
     # the filter in the next line removes all occurences of '', i.e. doesnt consider empty lines for counting the number of headers
     self.initial_count_security_headers = len(list(filter(('').__ne__, f.readlines())))
     #self.initial_count_security_headers = len(f.readlines())
-    
     f.close()
 
     f = open('dangerous_headers.txt','r')
@@ -881,6 +944,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     f = open('potentially_dangerous_headers.txt','r')
     self.initial_count_potentially_dangerous_headers = len(list(filter(('').__ne__, f.readlines())))
     #self.initial_count_potentially_dangerous_headers = len(f.readlines())
+    f.close()
+
+    f = open('cookie_flags.txt','r')
+    self.initial_count_cookie_flags = len(list(filter(('').__ne__, f.readlines())))
+    #self.initial_count_dangerous_headers= len(f.readlines())
     f.close()
 
   def check_python_modules(self, event):
@@ -903,13 +971,11 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     if 'docxtpl' not in sys.modules.keys():
       os.system('pip install docxtpl')
-      #subprocess.Popen('pip install docxtpl',stdout=subprocess.PIPE)
 
     docxtpl_version = subprocess.Popen('''python -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"''',stdout=subprocess.PIPE)
 
     output = proc.stdout.read()
-    #self.python_msg.setText(output.strip('\r\n') ) 
-    self.python_msg.setText(output.strip('\r\n') + ' ' + docxtpl_version.stdout.read())
+    self.python_msg.setText(output.strip('\r\n') + '; ' + docxtpl_version.stdout.read())
 
   def create_docx_frame(self):
     self.docx_frame = JFrame("Configure .docx report")
@@ -1802,11 +1868,30 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     resp_headers = response.split('\r\n')
     return req_headers, endpoint, response, resp_headers, unique_endpoint
   
+  def check_depth(self, url, depth):
+    """takes a URL (example: /dev/admin) and returns the url of only the given depth (for example, /dev for depth==1).
+    If depth==0 returns the whole URL. Depth can be useful if different directories in the webapp apply different headers
+    (for example using nested .htaccess files???)"""
+    url = url.split('?')[0]
+    if depth == 0:
+      return url
+    url = url.split('/')
+    return '/' + '/'.join(url[0:depth]).rstrip('/').lstrip('/')
+
   def summary_update_endpoints_worker(self):
     self.selected_output_hosts = []
     self.unique_endpoints_summary_model.setRowCount(0)
     self.progressBar.setIndeterminate(0)
     self.progressBar.setValue(0)
+    if self.depth_textbox.getText() == "Depth (0=all; Default=1)":
+      self.depth = 1
+    else:
+      if self.depth_textbox.getText().isnumeric():
+        self.depth = int(self.depth_textbox.getText())
+      else:
+        self.depth_textbox.setText('Enter a number')
+        
+
 
     '''self.dic_summary es un diccionario de diccionarios, que contiene como keys los issue_types, y como
     valor para cada key otra diccionario, cuyas keys son los host y para cada host el value es una lista
@@ -1834,15 +1919,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       host = item.getHost()
 
       req_headers, endpoint, response, resp_headers, unique_endpoint = self.data_from_request(item)
-      try:
-        print(host,endpoint)
-      except:
-        print('===================================================================')
 
-      if 'admin' in host.lower():
-        print('00000000000',unique_endpoint)
-      #if 'login' in unique_endpoint.lower():
-      #  print('kkk',host, unique_endpoint)
 
       if host in self.selected_output_hosts:
         req_headers, endpoint, response, resp_headers, unique_endpoint = self.data_from_request(item)
@@ -1861,35 +1938,50 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         for header in resp_headers:
           
           ### - cookies without flags
-          if 'set-cookie' in header.lower():
-            if 'secure' not in header.lower():
-              if host not in self.dic_summary["Cookies Without Flags"].keys():
-                self.dic_summary["Cookies Without Flags"][host] = []
+          #self.flags= ['secure','httponly']
+          for flag in self.cookie_flags:
+            if self.checkbox_cookies.isSelected():
+              if 'set-cookie' in header.lower():
+                if flag not in header.lower():
+                  if host not in self.dic_summary["Cookies Without Flags"].keys():
+                    self.dic_summary["Cookies Without Flags"][host] = []
 
-              string_to_add = "Missing Secure - URL: " + unique_endpoint
-              if string_to_add not in self.dic_summary["Cookies Without Flags"][host]:
-                self.unique_endpoints_summary_model.addRow([True, "Cookies without flags", host, string_to_add])
-                self.dic_summary["Cookies Without Flags"][host].append(string_to_add)
-              
-              #print(self.dic_summary)
+                  string_to_add = 'Missing "{}" header - URL: '.format(flag.title()) + self.check_depth(unique_endpoint, self.depth)
+                  if string_to_add not in self.dic_summary["Cookies Without Flags"][host]:
+                    self.unique_endpoints_summary_model.addRow([True, "Cookies without flags", host, string_to_add])
+                    self.dic_summary["Cookies Without Flags"][host].append(string_to_add)
 
-            if 'httponly' not in header.lower():
-              if host not in self.dic_summary["Cookies Without Flags"].keys():
-                self.dic_summary["Cookies Without Flags"][host] = []
 
-              string_to_add = "Missing HttpOnly - URL: " + unique_endpoint
-              if string_to_add not in self.dic_summary["Cookies Without Flags"][host]:
-                self.unique_endpoints_summary_model.addRow([True, "Cookies without flags", host, string_to_add])
-                self.dic_summary["Cookies Without Flags"][host].append(string_to_add)
-              
             
           ### - missing security headers
+          if self.checkbox_missing_security.isSelected():
+            pass
+            #print('iiiiiiiiiiiiii')
+            #print(self.security_headers)
+            #print('iiiiiiiiiiiiii')
+
 
           ### - dangerous header
+          
+          if self.checkbox_dangerous.isSelected():
+            print(header)
+            for dangerous_header in self.dangerous_headers:
+              if dangerous_header in header.lower():
+                if host not in self.dic_summary["Dangerous Headers"].keys():
+                  self.dic_summary["Dangerous Headers"][host] = []
 
+                string_to_add = '"{0}" header - URL: {1}'.format(dangerous_header.title(), self.check_depth(unique_endpoint, self.depth))
+                print(string_to_add)
+                print(self.dic_summary)
+                if string_to_add not in self.dic_summary["Dangerous Headers"][host]:
+                  self.unique_endpoints_summary_model.addRow([True, "Dangerous header", host, string_to_add])
+                  self.dic_summary["Dangerous Headers"][host].append(string_to_add)
+                print('xxxxxxxxxx')
           ### - potentially dangerous
-    self.framewait.setVisible(False)
+          if self.check_box_potentially_dangerous.isSelected():
+            pass
 
+    self.framewait.setVisible(False)
 
   def summary_update_endpoints(self, event):
     thread_show_progress = threading.Thread(target=self.determine_progress)
@@ -1900,10 +1992,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def create_summary(self):
     self.summary_frame = JFrame("Summary")
     self.summary_frame.setLayout(BorderLayout())
-    self.summary_frame.setSize(800, 600)
+    self.summary_frame.setSize(1200, 600)
     self.summary_frame.setLocationRelativeTo(None)  
 
     colNames_left = ("Include?", "Host" )
+
+    self.depth = 0
 
     c = GridBagConstraints()
     c.gridx = 0
@@ -1924,7 +2018,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.BOTH
     c.gridy += 1
     colNames_right = ("Report?", "Issue type", "Host", "Details" )
-    #colNames_right = ("Index", "Report?", "Issue type", "Host", "Unique endpoint" )
     self.unique_endpoints_summary_model = SummaryTableModel_right([], colNames_right)
 
     summary_all_table = JTable(self.unique_endpoints_summary_model)
@@ -1951,21 +2044,35 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     left_panel.add(button_update_hosts,c)
     left_panel.add(button_update_for_selected_hosts,c)
 
-
-
-
-
     c.weightx = 1
-    checkbox_missing_security = JCheckBox("Missing security headers")
-    checkbox_potentially_dangerous = JCheckBox("Potentially Dangerous headers")
-    checkbox_dangerous = JCheckBox("Dangerous or verbose headers")
-    left_panel.add(checkbox_missing_security, c)
-    left_panel.add(checkbox_potentially_dangerous, c)
-    left_panel.add(checkbox_dangerous, c)
+    self.checkbox_missing_security = JCheckBox("Missing security headers")
+    self.checkbox_potentially_dangerous = JCheckBox("Potentially Dangerous headers")
+    self.checkbox_dangerous = JCheckBox("Dangerous or verbose headers")
+    self.checkbox_cookies = JCheckBox("Cookies without flags")
+    #self.depth_label = JLabel("Depth (0 = all)\0")
+    #self.depth_label.putClientProperty("html.disable", None)
+    self.depth_textbox = JTextField("Depth (0=all; Default=1)")
+
+    self.checkbox_missing_security.setSelected(True)
+    self.checkbox_potentially_dangerous.setSelected(True)
+    self.checkbox_dangerous.setSelected(True)
+    self.checkbox_cookies.setSelected(True)
+
+    left_panel.add(self.checkbox_missing_security, c)
+    left_panel.add(self.checkbox_potentially_dangerous, c)
+    left_panel.add(self.checkbox_dangerous, c)
+    left_panel.add(self.checkbox_cookies, c)
+    #c.anchor = GridBagConstraints.EAST
+    #left_panel.add(self.depth_label, c)
+    #c.anchor = GridBagConstraints.WEST
+    c.weightx = 2
+    c.fill = GridBagConstraints.HORIZONTAL
+    left_panel.add(self.depth_textbox, c)
+
     self.summary_frame.add(left_panel, BorderLayout.NORTH)
 
     split = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, JScrollPane(self.output_hosts_summary_table), JScrollPane(summary_all_table))
-    split.setDividerLocation(150)
+    split.setDividerLocation(200)
     self.summary_frame.add(split, BorderLayout.CENTER)  
 
     right_panel = JPanel(GridBagLayout())

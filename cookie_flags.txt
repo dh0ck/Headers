@@ -1,0 +1,2 @@
+1 httponly
+1 secure
