@@ -431,15 +431,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       if self.model_tab_config_potentially_dangerous.getValueAt(i,0):
         self.table_config_potentially_dangerous.append([True, self.model_tab_config_potentially_dangerous.getValueAt(i,1)]) 
 
-    print('333333333')
-    print(self.initial_count_cookie_flags)
-    print(self.model_tab_config_cookie_flags, self.model_tab_config_cookie_flags.getValueAt(0,0))
     for i in range(self.initial_count_cookie_flags):
-
       if self.model_tab_config_cookie_flags.getValueAt(i,0):
         self.table_config_cookie_flags.append([True, self.model_tab_config_cookie_flags.getValueAt(i,1)]) 
 
-    print('555555555')
     self.dangerous_headers = [] 
     self.security_headers = [] 
     self.potentially_dangerous_headers = [] 
@@ -958,7 +953,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     win_python_command = "py --version"
     linux_python_command = 'python3 --version'
     win_python_command = 'py docx.py'
-    print(os_type)
     if 'win' in os_type:
       #proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
       proc = subprocess.Popen("py --version", stdout=subprocess.PIPE)
@@ -1658,7 +1652,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for entry in endpoint_table:
       for keyword in keywords:
         #print('----')
-        print (keyword.lower().strip())
+        #print (keyword.lower().strip())
         #print(entry[0].lower())
         if keyword.lower().strip() in entry[0].lower() or self.filter_endpoints.getText() == "To filter endpoints enter keywords (separated by a comma)" or self.filter_endpoints.getText() == "":
           self.model_all_endpoints.addRow(entry)
@@ -1851,8 +1845,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.output_hosts_summary_model.setRowCount(0)
     for host in sorted(unique_hosts):
       # para test los pongo todos a true, normalmente iran a false, pero intentar poner una forma de seleccionar todos con un boton
-      self.output_hosts_summary_model.addRow([True, host])
-      #self.output_hosts_summary_model.addRow([False, host])
+      #self.output_hosts_summary_model.addRow([True, host])
+      self.output_hosts_summary_model.addRow([False, host])
 
   def data_from_request(self, item):  
     """ Returns header data from a request-response object """
@@ -1933,6 +1927,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           if self.apply_regex(url) not in self.dic_summary["Bad HTTP Methods"][host]: # si para ese host no esta la url unique, anadela
             self.dic_summary["Bad HTTP Methods"][host].append("Method: " + http_method + "; URL: " + self.appl_regex(url))'''
 
+        # present security headers will be removed from here to create a list of missing security headers for every endpoint
+        #needed to be like this, to avoid copy by reference, which removes elements from self.security_headers as well
+        remaining_headers = list(self.security_headers)
+        removed_headers = []
 
         ##################################### HAY MAS FLAGS, MIRAR AQUI: https://www.invicti.com/learn/cookie-security-flags/
         for header in resp_headers:
@@ -1953,12 +1951,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
 
             
-          ### - missing security headers
+          ### - missing security headers (continues after the end of this loop)
           if self.checkbox_missing_security.isSelected():
-            pass
-            #print('iiiiiiiiiiiiii')
-            #print(self.security_headers)
-            #print('iiiiiiiiiiiiii')
+            check_header = header.split(':')[0].lower().rstrip().lstrip()
+            if check_header in self.security_headers and check_header not in removed_headers:
+              remaining_headers.remove(check_header)
+              removed_headers.append(check_header)
 
 
           ### - dangerous header
@@ -1982,9 +1980,18 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
                 string_to_add = '"{0}" header - URL: {1}'.format(potentially_dangerous_header.title(), self.check_depth(unique_endpoint, self.depth))
                 if string_to_add not in self.dic_summary["Potentially Dangerous Headers"][host]:
-                  self.unique_endpoints_summary_model.addRow([True, "Potentially Dangerous header", host, string_to_add])
+                  self.unique_endpoints_summary_model.addRow([True, "Potentially Dangerous Header", host, string_to_add])
                   self.dic_summary["Potentially Dangerous Headers"][host].append(string_to_add)
- 
+
+        ### - continuation of missing security headers, after knowing which headers are not in a response
+        if self.checkbox_missing_security.isSelected():
+          for header in remaining_headers:
+            if host not in self.dic_summary["Missing Security Headers"].keys():
+              self.dic_summary["Missing Security Headers"][host] = []
+            string_to_add = 'Missing "{0}" header - URL: {1}'.format(header.title(), self.check_depth(unique_endpoint, self.depth) )
+            if string_to_add not in self.dic_summary["Missing Security Headers"][host]:
+              self.unique_endpoints_summary_model.addRow([True, "Missing Security Header", host, string_to_add])
+              self.dic_summary["Missing Security Headers"][host].append(string_to_add)
 
 
     self.framewait.setVisible(False)
@@ -2060,9 +2067,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.depth_textbox = JTextField("Depth (0=all; Default=1)")
 
     self.checkbox_missing_security.setSelected(True)
-    self.checkbox_potentially_dangerous.setSelected(True)
-    self.checkbox_dangerous.setSelected(True)
-    self.checkbox_cookies.setSelected(True)
+    self.checkbox_potentially_dangerous.setSelected(False)
+    self.checkbox_dangerous.setSelected(False)
+    self.checkbox_cookies.setSelected(False)
 
     left_panel.add(self.checkbox_missing_security, c)
     left_panel.add(self.checkbox_potentially_dangerous, c)
