@@ -1,2 +1,7 @@
 1 httponly
 1 secure
+0 samesite
+0 expire
+0 max-age
+0 path
+0 domain

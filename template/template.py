@@ -27,6 +27,35 @@ cvss_images={'3.1':r'C:\Users\allc\Documents\GitHub\Headers\template\3,1.png',
 	'0':r'C:\Users\allc\Documents\GitHub\Headers\template\0.png', 
 	'5.4':r'C:\Users\allc\Documents\GitHub\Headers\template\5,4.png'}
 
+def get_issues():
+	dic = {'Host':{}}
+	#dic = {'Issue':{}}
+	f = open('../output/selected_output.txt','r')
+	for line in f.readlines():
+		issue = line.split(';')[0].split(': ')[1]
+		host = line.split(';')[1].split(': ')[1]
+		url = line.split(';')[2].split('- URL: ')[1].rstrip('\n')
+		if host not in dic['Host'].keys():
+			dic['Host'][host] = {'Issue':{}}
+
+		if issue == "Missing Security Header":
+			"""para missing securit headers usa la estructura del diccionario: 
+			host -> issue -> missing header -> url"""
+			missing_header = line.split(';')[2].split('Missing "')[1].split('" header')[0]
+			if "Missing Security Header" not in dic['Host'][host]['Issue'].keys():
+				dic['Host'][host]['Issue'][issue] = {"Missing header":{missing_header:[url]}}
+			else:
+				if missing_header not in dic['Host'][host]['Issue'][issue]["Missing header"].keys():
+					dic['Host'][host]['Issue'][issue]["Missing header"][missing_header] = []
+				dic['Host'][host]['Issue'][issue]["Missing header"][missing_header].append(url)
+
+
+	print(dic)
+
+	f.close()
+
+get_issues()
+"""
 doc = DocxTemplate("template.docx")
 
 def build_item(IP,host,port,vuln,cvss):
@@ -52,7 +81,7 @@ f = open("headers.txt")
 lines = f.readlines()[7:]
 f.close()
 k=0
-headers = []
+headers = []_
 for line in lines:
 	splitted = line.split(':')
 	host = splitted[0]
@@ -85,3 +114,4 @@ for table in doc.tables:
 	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)
 doc.save('aaa.docx')
 
+"""

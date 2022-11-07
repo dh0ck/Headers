@@ -271,7 +271,7 @@ class SummaryTableModel_right(DefaultTableModel):
   
   def isCellEditable(self, row, column):
     """Returns True if cells are editable."""
-    canEdit = [False, True, False, False, False]
+    canEdit = [True, False, False, False, False]
     return canEdit[column]
 
 class IssueTable(JTable):
@@ -993,6 +993,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     c.gridy += 1
     self.check_python_docx_modules = JButton("Check docx modules", actionPerformed = self.check_python_modules)
+    self.docx_frame.add(self.check_python_docx_modules, c)
+
+    c.gridy += 1
+    self.export_docx = JButton("Export docx", actionPerformed = self.output_selected_summary)
     self.docx_frame.add(self.check_python_docx_modules, c)
 
     c.gridy += 1
@@ -1872,6 +1876,20 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     url = url.split('/')
     return '/' + '/'.join(url[0:depth]).rstrip('/').lstrip('/')
 
+  def output_selected_summary(self, event):
+    f = open('output/selected_output.txt','w')
+
+    for i in range(self.unique_endpoints_summary_model.getRowCount()):
+      if self.unique_endpoints_summary_model.getValueAt(i,0):
+        issue = self.unique_endpoints_summary_model.getValueAt(i,1)
+        host = self.unique_endpoints_summary_model.getValueAt(i,2)
+        detail = self.unique_endpoints_summary_model.getValueAt(i,3)
+        f.write('Issue: ' + issue + '; Host: ' + host + '; Detail: ' + detail + '\n')
+    f.close()
+
+
+
+
   def summary_update_endpoints_worker(self):
     self.selected_output_hosts = []
     self.unique_endpoints_summary_model.setRowCount(0)
@@ -1994,6 +2012,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               self.dic_summary["Missing Security Headers"][host].append(string_to_add)
 
 
+    print(self.dic_summary)
     self.framewait.setVisible(False)
 
   def summary_update_endpoints(self, event):
@@ -2037,9 +2056,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     summary_all_table.getColumnModel().getColumn(0).setPreferredWidth(60)
     summary_all_table.getColumnModel().getColumn(0).setMaxWidth(60)
-    summary_all_table.getColumnModel().getColumn(1).setPreferredWidth(60)
-    summary_all_table.getColumnModel().getColumn(2).setPreferredWidth(60)
-    summary_all_table.getColumnModel().getColumn(3).setPreferredWidth(60)
+    summary_all_table.getColumnModel().getColumn(1).setPreferredWidth(150)
+    summary_all_table.getColumnModel().getColumn(1).setMaxWidth(180)
+    summary_all_table.getColumnModel().getColumn(2).setPreferredWidth(250)
+    summary_all_table.getColumnModel().getColumn(3).setPreferredWidth(300)
 
     left_panel = JPanel(GridBagLayout())
     c = GridBagConstraints()
@@ -2096,9 +2116,22 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     right_panel.add(JButton("Choose output file"), c)
     c.weightx = 1
     right_panel.add(JTextField("Output file"), c)
+
+
     c.anchor = GridBagConstraints.WEST
     c.weightx = 0
-    right_panel.add(JButton(".docx report", actionPerformed = self.show_docx), c)
+    #c.gridx += 1
+    #c.gridy = y_pos
+    a=os.getcwd() + '\\gear_2.png'
+    image_path=a.encode('string-escape')  #ver si esto falla al coger en linux el icono
+    self.advanced_config_button = JButton(ImageIcon(image_path))
+    self.advanced_config_button.addActionListener(self.show_docx)
+    self.advanced_config_button.setPreferredSize(Dimension(23, 23))
+    right_panel.add(self.advanced_config_button, c)
+
+
+    c.weightx = 0
+    right_panel.add(JButton(".docx report", actionPerformed = self.output_selected_summary), c)
     self.summary_frame.add(right_panel, BorderLayout.SOUTH)
     
   def show_summary(self, event):
