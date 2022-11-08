@@ -30,6 +30,15 @@ cvss_images={'3.1':r'C:\Users\allc\Documents\GitHub\Headers\template\3,1.png',
 def get_issues():
 	dic = {'Host':{}}
 	#dic = {'Issue':{}}
+
+	def fill_dic(title, variable):
+		if title not in dic['Host'][host]['Issue'].keys():
+				dic['Host'][host]['Issue'][issue] = {title:{variable:[url]}}
+		else:
+			if variable not in dic['Host'][host]['Issue'][issue][title].keys():
+				dic['Host'][host]['Issue'][issue][title][variable] = []
+			dic['Host'][host]['Issue'][issue][title][variable].append(url)
+
 	f = open('../output/selected_output.txt','r')
 	for line in f.readlines():
 		issue = line.split(';')[0].split(': ')[1]
@@ -42,13 +51,20 @@ def get_issues():
 			"""para missing securit headers usa la estructura del diccionario: 
 			host -> issue -> missing header -> url"""
 			missing_header = line.split(';')[2].split('Missing "')[1].split('" header')[0]
-			if "Missing Security Header" not in dic['Host'][host]['Issue'].keys():
-				dic['Host'][host]['Issue'][issue] = {"Missing header":{missing_header:[url]}}
-			else:
-				if missing_header not in dic['Host'][host]['Issue'][issue]["Missing header"].keys():
-					dic['Host'][host]['Issue'][issue]["Missing header"][missing_header] = []
-				dic['Host'][host]['Issue'][issue]["Missing header"][missing_header].append(url)
+			fill_dic("Missing Security Header", missing_header)
+		
+		if issue == "Dangerous header":
+			dangerous_header = line.split(';')[2].split('" header')[0].split('Detail: ')[1].lstrip('"')
+			fill_dic("Dangerous header", dangerous_header)
 
+		if issue == "Potentially Dangerous Header":
+			potentially_dangerous_header = line.split(';')[2].split('" header')[0].split('Detail: ')[1].lstrip('"')
+			fill_dic("Potentially Dangerous Header", potentially_dangerous_header)
+
+		if issue == "Cookies without flags":
+			missing_flag = line.split('Missing "')[1].split('" header -')[0]
+			fill_dic("Cookies without flags", missing_flag)
+			
 
 	print(dic)
 
