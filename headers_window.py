@@ -1904,6 +1904,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.depth_textbox.setText('Enter a number')
         
 
+    #meter puerto de alguna forma en el output dic, junto al host
 
     '''self.dic_summary es un diccionario de diccionarios, que contiene como keys los issue_types, y como
     valor para cada key otra diccionario, cuyas keys son los host y para cada host el value es una lista
@@ -1929,6 +1930,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         self.progressBar.setValue(100 * k_progress // len(history1))
 
       host = item.getHost()
+      port = item.getPort()
 
       req_headers, endpoint, response, resp_headers, unique_endpoint = self.data_from_request(item)
 
@@ -1950,7 +1952,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         remaining_headers = list(self.security_headers)
         removed_headers = []
 
-        ##################################### HAY MAS FLAGS, MIRAR AQUI: https://www.invicti.com/learn/cookie-security-flags/
         for header in resp_headers:
           
           ### - cookies without flags
@@ -1962,7 +1963,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                   if host not in self.dic_summary["Cookies Without Flags"].keys():
                     self.dic_summary["Cookies Without Flags"][host] = []
 
-                  string_to_add = 'Missing "{}" header - URL: '.format(flag.title()) + self.check_depth(unique_endpoint, self.depth)
+                  #string_to_add = 'Missing "{}" header - URL: '.format(flag.title()) + self.check_depth(unique_endpoint, self.depth) + ' - Port: ' + port
+                  string_to_add = 'Missing "{0}" flag - URL: {1} - Port: {2}'.format(flag.title(), self.check_depth(unique_endpoint, self.depth), port)
                   if string_to_add not in self.dic_summary["Cookies Without Flags"][host]:
                     self.unique_endpoints_summary_model.addRow([True, "Cookies without flags", host, string_to_add])
                     self.dic_summary["Cookies Without Flags"][host].append(string_to_add)
@@ -1984,7 +1986,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                 if host not in self.dic_summary["Dangerous Headers"].keys():
                   self.dic_summary["Dangerous Headers"][host] = []
 
-                string_to_add = '"{0}" header - URL: {1}'.format(dangerous_header.title(), self.check_depth(unique_endpoint, self.depth))
+                string_to_add = '"{0}" header - URL: {1} - Port: {2}'.format(dangerous_header.title(), self.check_depth(unique_endpoint, self.depth), port)
                 if string_to_add not in self.dic_summary["Dangerous Headers"][host]:
                   self.unique_endpoints_summary_model.addRow([True, "Dangerous header", host, string_to_add])
                   self.dic_summary["Dangerous Headers"][host].append(string_to_add)
@@ -1996,7 +1998,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
                 if host not in self.dic_summary["Potentially Dangerous Headers"].keys():
                   self.dic_summary["Potentially Dangerous Headers"][host] = []
 
-                string_to_add = '"{0}" header - URL: {1}'.format(potentially_dangerous_header.title(), self.check_depth(unique_endpoint, self.depth))
+                string_to_add = '"{0}" header - URL: {1} - Port: {2}'.format(potentially_dangerous_header.title(), self.check_depth(unique_endpoint, self.depth), port)
                 if string_to_add not in self.dic_summary["Potentially Dangerous Headers"][host]:
                   self.unique_endpoints_summary_model.addRow([True, "Potentially Dangerous Header", host, string_to_add])
                   self.dic_summary["Potentially Dangerous Headers"][host].append(string_to_add)
@@ -2006,7 +2008,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
           for header in remaining_headers:
             if host not in self.dic_summary["Missing Security Headers"].keys():
               self.dic_summary["Missing Security Headers"][host] = []
-            string_to_add = 'Missing "{0}" header - URL: {1}'.format(header.title(), self.check_depth(unique_endpoint, self.depth) )
+            string_to_add = 'Missing "{0}" header - URL: {1} - Port: {2}'.format(header.title(), self.check_depth(unique_endpoint, self.depth), port)
             if string_to_add not in self.dic_summary["Missing Security Headers"][host]:
               self.unique_endpoints_summary_model.addRow([True, "Missing Security Header", host, string_to_add])
               self.dic_summary["Missing Security Headers"][host].append(string_to_add)
