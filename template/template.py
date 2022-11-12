@@ -18,12 +18,21 @@ for info in infos:
 	descriptions[header]["solution"] = contents.split('---')[1]
 
 
-vulns = [('Missing HTTP-Strict-Transport-Security-header','MEDIUM','6.5','CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N'), 
-	('Missing Access-Control-Allow-Origin header', 'LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-	('Missing X-Frame-Options header','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N'),
-	('Missing Content-Security-Policy header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-	('Missing X-Content-Type-Options header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-	('Missing X-XSS-Protection header','MEDIUM','5.4','CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N')]
+vulns = [
+		('Missing HTTP-Strict-Transport-Security-header','MEDIUM','6.5','CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N'), 
+		('Missing Access-Control-Allow-Origin header', 'LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing X-Frame-Options header','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N'),
+		('Missing Content-Security-Policy header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing X-Content-Type-Options header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing X-XSS-Protection header','MEDIUM','5.4','CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N'),
+		('Missing Cookie Secure flag','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing Cookie HttpOnly flag','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Dangerous Server header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Dangerous X-Powered-By header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Potentially Dangerous Access-Control-Allow-Origin header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Potentially Dangerous Access-Control-Allow-Credentials header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N')
+	]
+
   
 
 cvss_images={'3.1':'3,1.png','6.5':'6,5.png','0':'0.png','5.4':'5,4.png'}
