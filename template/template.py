@@ -10,6 +10,8 @@ infos = f.readlines()
 f.close()
 descriptions = {}
 solutions = []
+# info.txt file cannot contain empty lines!!! all lines must be of the format:
+# header ::: description --- solution
 for info in infos:
 	header = info.split(' ::: ')[0]
 	contents = info.split(' ::: ')[1]
@@ -17,23 +19,23 @@ for info in infos:
 	descriptions[header]["description"] = contents.split('---')[0]
 	descriptions[header]["solution"] = contents.split('---')[1]
 
-
+#breakpoint()
 vulns = [
-		('Missing HTTP-Strict-Transport-Security-header','MEDIUM','6.5','CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N'), 
-		('Missing Access-Control-Allow-Origin header', 'LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Missing X-Frame-Options header','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N'),
-		('Missing Content-Security-Policy header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Missing X-Content-Type-Options header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Missing X-XSS-Protection header','MEDIUM','5.4','CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N'),
-		('Missing Cookie Secure flag','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Missing Cookie HttpOnly flag','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Dangerous Server header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Dangerous X-Powered-By header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Potentially Dangerous Access-Control-Allow-Origin header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
-		('Potentially Dangerous Access-Control-Allow-Credentials header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N')
+		('Missing HTTP-Strict-Transport-Security header','Missing Security Header','MEDIUM','6.5','CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:N'), 
+		('Missing Cache-Control header','Missing Security Header', 'LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing X-Frame-Options header','Missing Security Header','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N'),
+		('Missing Content-Security-Policy header','Missing Security Header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing X-Content-Type-Options header','Missing Security Header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing X-XSS-Protection header','Missing Security Header','MEDIUM','5.4','CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N'),
+		('Missing Referrer-Policy header','Missing Security Header','MEDIUM','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing Cookie Secure flag','Cookies without flags','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Missing Cookie HttpOnly flag','Cookies without flags','LOW','3.1','CVSS:3.0/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Dangerous Server header','Dangerous header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Dangerous X-Powered-By header','Dangerous header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Potentially Dangerous Access-Control-Allow-Origin header','Potentially Dangerous Header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N'),
+		('Potentially Dangerous Access-Control-Allow-Credentials header','Potentially Dangerous Header','LOW','3.1','CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N')
 	]
 
-  
 
 cvss_images={'3.1':'3,1.png','6.5':'6,5.png','0':'0.png','5.4':'5,4.png'}
 
@@ -83,8 +85,6 @@ def get_issues():
 	return dic
 
 fill_dic = get_issues()
-print(fill_dic)
-#doc = DocxTemplate("temp.docx")
 doc = DocxTemplate("template.docx")
 
 def build_item(IP,host,port,vuln,cvss,urls):
@@ -100,61 +100,55 @@ def build_item(IP,host,port,vuln,cvss,urls):
 	table.append( ('State', 'OPEN') )
 	table.append( ('Solution', descriptions[vuln[0]]["solution"]) )
 	table.append( ('CVSS',vuln[3]) )
-	table.append( ('CVSS_image', InlineImage(doc, cvss_images[vuln[2]], width=Mm(160))) )
+	table.append( ('CVSS_image', InlineImage(doc, cvss_images[vuln[3]], width=Mm(160))) )
 	table.append( ('URLs', urls)) 
 	return table
 	
+#breakpoint()
+print(fill_dic)
 headers = []
 headers1 = []
 for host in fill_dic['Host'].keys():
 	for issue in fill_dic['Host'][host]['Issue'].keys():
 		for detail in fill_dic['Host'][host]['Issue'][issue][issue].keys():
+			print('oooooooooooo',detail)
 			urls = fill_dic['Host'][host]['Issue'][issue][issue][detail]
+			""" buscar forma de incluir IP si esta disponible"""
 			IP = '-'
+			# loop to retrieve the appropriate description and solution of a certain issue type
+			# falta asignar detail a vuln (detail es string, por ej "Cache-Control", "Server" ,"X-Xss-Protection")
 			for vuln in vulns:
-				print('..................')
-				print (issue, vuln[0])
-				print('oooooooooooo')
-				'''esto esta mal, arreglar el if y añadir a vulns las que faltan'''
-				if issue in vuln[0]:  
+				if detail.lower() in vuln[0].lower():  
+					print('kkkk',vuln)
 					break	
-			cvss = vuln[2]
-			#print('-------------')
-			#print(IP,host.split(' [')[0],host.split(' [')[1].split(']')[0],vuln,cvss,urls)
-			#print('-------------')
+			cvss = vuln[3]
 			to_append = build_item(IP,host.split(' [')[0],host.split(' [')[1].split(']')[0],vuln,cvss,urls)
 			headers.append(to_append)
 			headers1.append({"headers":to_append})#, "urls":urls})
 
-
-
-
+for header in headers1:
+	print(header['headers'][0][1], '\n')
 '''las access-control-allow-origin mirar si las ponian en el informe anterior
  si no estaban. si no las ponen, quitarlas de aqui, solo habria que ponerla
   si esta mal configurada, no si no esta (en principio), puedo crearla pero poniendo
   un aviso de revisarla a mano'''
-
-context = {
-    "headers" : headers 
-}
-
 
 context1 = {
 	"headers" : headers1
 }
 doc.render(context1)
 #doc.render(context)
-
+#breakpoint()
 # Add colors to severity cell
 colors = {"CRITICAL":"C857C9","HIGH":"FF0000","MEDIUM":"ffff00","LOW":"00B050"}
-for table in doc.tables:
+'''for table in doc.tables:
 	severity = table.cell(1,3).text
-	'''quitar la siguiente linea y arreglar la anterior'''
-	severity = 'MEDIUM'
+	"""quitar la siguiente linea y arreglar la anterior"""
+	#severity = 'MEDIUM'
+	print(severity)
 	shading_elm_1 = parse_xml(r'<w:shd {0} w:fill="{1}"/>'.format(nsdecls('w'),colors[severity]))
 
 	
-	print(severity)
-	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)
+	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)'''
 doc.save('aaa.docx')
 
