@@ -88,22 +88,23 @@ fill_dic = get_issues()
 doc = DocxTemplate("template.docx")
 
 def build_item(IP,host,port,vuln,cvss,urls):
-	table = []
-	table.append( ('Name',vuln[0]) )
-	table.append( ('Port',port) )
-	table.append( ('Protocol', 'TCP') )
-	table.append( ('Description', descriptions[vuln[0]]["description"]) )
-	table.append( ('Severity', vuln[1]) ) 
-	table.append( ('Code', '') )
-	table.append( ('Host', host) )
-	table.append( ('IP', IP) )
-	table.append( ('State', 'OPEN') )
-	table.append( ('Solution', descriptions[vuln[0]]["solution"]) )
-	table.append( ('CVSS',vuln[3]) )
-	table.append( ('CVSS_image', InlineImage(doc, cvss_images[vuln[3]], width=Mm(160))) )
-	table.append( ('URLs', urls)) 
-	return table
-	
+	dic = {
+		"Name":vuln[0],
+		"Port":port,
+		"Protocol":"TCP",
+		"Description":descriptions[vuln[0]]["description"],
+		"Severity":vuln[1],
+		"Code":'',
+		"Host":host,
+		"IP":IP,
+		"State":"OPEN",
+		"Solution":descriptions[vuln[0]]["solution"],
+		"CVSS":vuln[3],
+		"CVSS_image":InlineImage(doc, cvss_images[vuln[3]], width=Mm(160)),
+		"URLs":urls
+		}
+	return dic
+
 #breakpoint()
 print(fill_dic)
 headers = []
@@ -126,8 +127,8 @@ for host in fill_dic['Host'].keys():
 			headers.append(to_append)
 			headers1.append({"headers":to_append})#, "urls":urls})
 
-for header in headers1:
-	print(header['headers'][0][1], '\n')
+#for header in headers1:
+#	print(header['headers'][0][1], '\n')
 '''las access-control-allow-origin mirar si las ponian en el informe anterior
  si no estaban. si no las ponen, quitarlas de aqui, solo habria que ponerla
   si esta mal configurada, no si no esta (en principio), puedo crearla pero poniendo
