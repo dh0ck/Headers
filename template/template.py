@@ -93,7 +93,7 @@ def build_item(IP,host,port,vuln,cvss,urls):
 		"Port":port,
 		"Protocol":"TCP",
 		"Description":descriptions[vuln[0]]["description"],
-		"Severity":vuln[1],
+		"Severity":vuln[2],
 		"Code":'',
 		"Host":host,
 		"IP":IP,
@@ -105,30 +105,27 @@ def build_item(IP,host,port,vuln,cvss,urls):
 		}
 	return dic
 
-#breakpoint()
-print(fill_dic)
 headers = []
 headers1 = []
 for host in fill_dic['Host'].keys():
 	for issue in fill_dic['Host'][host]['Issue'].keys():
 		for detail in fill_dic['Host'][host]['Issue'][issue][issue].keys():
-			print('oooooooooooo',detail)
 			urls = fill_dic['Host'][host]['Issue'][issue][issue][detail]
 			""" buscar forma de incluir IP si esta disponible"""
 			IP = '-'
 			# loop to retrieve the appropriate description and solution of a certain issue type
-			# falta asignar detail a vuln (detail es string, por ej "Cache-Control", "Server" ,"X-Xss-Protection")
 			for vuln in vulns:
 				if detail.lower() in vuln[0].lower():  
-					print('kkkk',vuln)
 					break	
 			cvss = vuln[3]
+			if IP != '-':
+				IP = ' - (' + IP + ')'
+			else:
+				IP = ''
 			to_append = build_item(IP,host.split(' [')[0],host.split(' [')[1].split(']')[0],vuln,cvss,urls)
 			headers.append(to_append)
 			headers1.append({"headers":to_append})#, "urls":urls})
 
-#for header in headers1:
-#	print(header['headers'][0][1], '\n')
 '''las access-control-allow-origin mirar si las ponian en el informe anterior
  si no estaban. si no las ponen, quitarlas de aqui, solo habria que ponerla
   si esta mal configurada, no si no esta (en principio), puedo crearla pero poniendo
@@ -138,18 +135,13 @@ context1 = {
 	"headers" : headers1
 }
 doc.render(context1)
-#doc.render(context)
-#breakpoint()
 # Add colors to severity cell
 colors = {"CRITICAL":"C857C9","HIGH":"FF0000","MEDIUM":"ffff00","LOW":"00B050"}
-'''for table in doc.tables:
+for table in doc.tables:
 	severity = table.cell(1,3).text
-	"""quitar la siguiente linea y arreglar la anterior"""
-	#severity = 'MEDIUM'
-	print(severity)
 	shading_elm_1 = parse_xml(r'<w:shd {0} w:fill="{1}"/>'.format(nsdecls('w'),colors[severity]))
 
 	
-	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)'''
+	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)
 doc.save('aaa.docx')
 
