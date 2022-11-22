@@ -1,6 +1,6 @@
 from docx.oxml.ns import nsdecls
 from docx.oxml import parse_xml
-import sys
+import os
 from docxtpl import DocxTemplate
 from docxtpl import InlineImage
 from docx.shared import Mm
@@ -143,5 +143,11 @@ for table in doc.tables:
 
 	
 	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)
-doc.save('aaa.docx')
+
+filename = "bbb.docx"
+try:
+	os.remove(filename)
+except:
+	pass
+doc.save(filename)
 

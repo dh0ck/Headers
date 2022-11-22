@@ -1038,6 +1038,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.selected_header = ""
     self.is_meta = False
     self.dic_host_unique_endpoint = {}
+
     
     return
     
@@ -1854,6 +1855,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
   def data_from_request(self, item):  
     """ Returns header data from a request-response object """
+    """ sometimes this function has included https:// in the url for some reason"""
     request = self._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
     req_headers = request.split('\r\n')
     #iter_host = self.find_host(req_headers)
@@ -1886,6 +1888,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         detail = self.unique_endpoints_summary_model.getValueAt(i,3)
         f.write('Issue: ' + issue + '; Host: ' + host + '; Detail: ' + detail + '\n')
     f.close()
+    os.chdir('template')
+    os.system("python template.py")
+    os.chdir('..')
 
 
 
