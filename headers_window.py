@@ -1382,6 +1382,16 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     return
 
+  def choose_output_docx_file(self, event):
+    """File dialogue to choose the path where the output docx file will be written"""
+    fc = JFileChooser()
+    result = fc.showOpenDialog( None )
+    if result == JFileChooser.APPROVE_OPTION :
+      self.out_docx_path.setText(str(fc.getSelectedFile()))
+      #print(str(fc.getSelectedFile()))
+
+    return
+
   def save_json(self,event):
     """Save data to an output file, either in JSON format or in plain text. Multiple output formats are available."""
     out_type = self.save_ComboBox.getSelectedItem()
@@ -1889,7 +1899,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         f.write('Issue: ' + issue + '; Host: ' + host + '; Detail: ' + detail + '\n')
     f.close()
     os.chdir('template')
-    os.system("python template.py")
+    if self.out_docx_path.getText() != "Output file":
+      optional_name = " " + self.out_docx_path.getText()
+    else:
+      optional_name = ""
+    print("python template.py{}".format(optional_name))
+    os.system("python template.py{}".format(optional_name))
     os.chdir('..')
 
 
@@ -2019,7 +2034,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
               self.dic_summary["Missing Security Headers"][host].append(string_to_add)
 
 
-    print(self.dic_summary)
     self.framewait.setVisible(False)
 
   def summary_update_endpoints(self, event):
@@ -2120,9 +2134,10 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.fill = GridBagConstraints.HORIZONTAL
     c.anchor = GridBagConstraints.WEST
     c.weightx = 0
-    right_panel.add(JButton("Choose output file"), c)
+    right_panel.add(JButton("Choose output file", actionPerformed = self.choose_output_docx_file), c)
     c.weightx = 1
-    right_panel.add(JTextField("Output file"), c)
+    self.out_docx_path = JTextField("Output file")
+    right_panel.add(self.out_docx_path, c)
 
 
     c.anchor = GridBagConstraints.WEST
@@ -2144,7 +2159,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def show_summary(self, event):
     self.summary_frame.setVisible(True)
     self.summary_frame.toFront()
-    self.summary_frame.setAlwaysOnTop(True)
   
   def getUiComponent(self):
     """Builds the interface of the extension tab."""
@@ -2160,7 +2174,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.progressBar.setMinimum(1)
     self.panelwait.add(self.progressBar)
     self.framewait.add(self.panelwait)
-
 
 
     self.create_summary()

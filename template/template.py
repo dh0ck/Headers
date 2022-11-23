@@ -1,6 +1,6 @@
 from docx.oxml.ns import nsdecls
 from docx.oxml import parse_xml
-import os
+import os, sys
 from docxtpl import DocxTemplate
 from docxtpl import InlineImage
 from docx.shared import Mm
@@ -144,7 +144,10 @@ for table in doc.tables:
 	
 	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)
 
-filename = "bbb.docx"
+if len(sys.argv) != 2:
+	filename = "bbb.docx"
+else:
+	filename = sys.argv[1]
 try:
 	os.remove(filename)
 except:
