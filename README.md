@@ -23,7 +23,8 @@ A couple of clicks will do that for you!!!
 ## Disclaimer
 As far as I have used and tested this extension, both while developing it and for my personal and professional use, it works as it should, but there may be unexpected cases where it doesn't find some header, doesn't properly find unique endpoints or some other minor issues. In any case I don't think you will find many of these outliers, but complicated URLs could cause some problems. If you detect any, feel free to let me know (check the How to contribute section further down below). Also, I advise that you check manually the results provided by this extension, at least a couple of times to get used to how this extension works, and to make sure that you don't report to your client anything that is not actually there. By now I don't check it anymore for my own pentests because I know it works, but use it at your own risk!
 
-<img width="74" alt="520px-Warning svg" src="https://user-images.githubusercontent.com/34309036/210149746-902b4116-1c4c-4d90-9362-379fe9335b9d.png">
+![520px-Warning svg (1)](https://user-images.githubusercontent.com/34309036/210150162-1c95a56f-c150-40ed-8199-0509599e715b.png)
+
 
 <b>WARNING! I have experienced problems with the docxtpl library on linux! I strongly advise using the Windows version of Burp to benefit from the automatic reporting feature of this extension! In any case, if you are writing Word reports I guess you shold be using Windows at some point, so why not exporting the Burp project from your Linux machine (in case you use Burp on Linux) and importing it on Burp on Windows, where you should be able to generate this report? I guess the same applies to Mac users... Not my fault, sorry, it's the third party library...</b>.
 
@@ -60,7 +61,13 @@ Finally, click on the "Choose output file" on the lower left corner to choose th
 
 ![gif5](https://user-images.githubusercontent.com/34309036/210148737-ed530567-875d-4590-a500-0b21c0d968d2.gif)
 
-6- Enjoy the many hours of manual work that you just saved yourself. Preferably, use these hours to go for a walk or do some exercise instead of gaming, so that the electricity that you save won't pollute the planet, I guess that typing in Word requires less electricity than games to run :)
+<b>As mentioned earlier, I have experienced problems generating the Word reports on linux, due to some issue with the docxtpl (not my fault!). So I highly advise to use the Windows version of Burp to profit from this extension</b>
+
+6- If you use the example template, or modify it, don't forget to update the figure numbers for the evidences that you can paste later into the report. For that, you can select all text on Word (Ctrl-A, or some other key combination depending on your keyboard language) and then right click on the selection and click on "Update field" (for some keyboard languages, the F9 key also works).
+
+![gif6](https://user-images.githubusercontent.com/34309036/210150343-dc988795-ff39-41d5-8583-c323fa7bfaf2.gif)
+
+7- Enjoy the many hours of manual work that you just saved yourself. Preferably, use these hours to go for a walk or do some exercise instead of gaming, so that the electricity that you save won't pollute the planet, I guess that typing in Word requires less electricity than games to run :)
 
 ## Word template and other customization
 1- This extension recalls the configurations that you use, but make sure to "save changes" or "apply changes" in the different config windows, whenever you see such buttons. Doing so, next time you load the extension it will have the same settings you last used. There are also buttons to revert to factory settings.
