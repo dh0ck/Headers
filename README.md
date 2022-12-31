@@ -23,7 +23,8 @@ A couple of clicks will do that for you!!!
 ## Disclaimer
 As far as I have used and tested this extension, both while developing it and for my personal and professional use, it works as it should, but there may be unexpected cases where it doesn't find some header, doesn't properly find unique endpoints or some other minor issues. In any case I don't think you will find many of these outliers, but complicated URLs could cause some problems. If you detect any, feel free to let me know (check the How to contribute section further down below). Also, I advise that you check manually the results provided by this extension, at least a couple of times to get used to how this extension works, and to make sure that you don't report to your client anything that is not actually there. By now I don't check it anymore for my own pentests because I know it works, but use it at your own risk!
 
-![520px-Warning svg (1)](https://user-images.githubusercontent.com/34309036/210150425-59094a84-f589-4922-8c6a-bc75085f9bf9.png | width=70)
+![234px-Warning svg](https://user-images.githubusercontent.com/34309036/210150493-a925991c-7ff7-440f-9275-7075357b6131.png)
+
 
 <b>WARNING! I have experienced problems with the docxtpl library on linux! I strongly advise using the Windows version of Burp to benefit from the automatic reporting feature of this extension! In any case, if you are writing Word reports I guess you shold be using Windows at some point, so why not exporting the Burp project from your Linux machine (in case you use Burp on Linux) and importing it on Burp on Windows, where you should be able to generate this report? I guess the same applies to Mac users... Not my fault, sorry, it's the third party library...</b>.
 
