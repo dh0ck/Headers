@@ -964,8 +964,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.gridx = 0
     c.weightx = 0
     c.gridy = 0
-    self.docx_frame.add(JLabel('Make sure your Python3 installation runs on windows by typing "py" on Powershell or python3 or bash'), c)
-    self.docx_frame.add(JLabel('If your python executable is in a custom path, please write it in the next textbox'))
+    self.docx_frame.add(JLabel('Make sure your Python3 installation runs on windows by typing "py" on Powershell or python3 or bash\n'), c)
+    c.gridy += 1
+    self.docx_frame.add(JLabel('If your python executable is in a custom path, please write it in the next textbox'), c)
     c.gridy += 1
     c.weightx = 1
     c.fill = GridBagConstraints.HORIZONTAL

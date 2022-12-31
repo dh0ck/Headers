@@ -64,7 +64,7 @@ def get_issues():
 			dic['Host'][host] = {'Issue':{}}
 
 		if issue == "Missing Security Header":
-			"""para missing securit headers usa la estructura del diccionario: 
+			"""for missing securit headers use the structure of the dictionary: 
 			host -> issue -> missing header -> url"""
 			missing_header = line.split(';')[2].split('Missing "')[1].split('" header')[0]
 			fill_dic("Missing Security Header", missing_header)
@@ -111,7 +111,6 @@ for host in fill_dic['Host'].keys():
 	for issue in fill_dic['Host'][host]['Issue'].keys():
 		for detail in fill_dic['Host'][host]['Issue'][issue][issue].keys():
 			urls = fill_dic['Host'][host]['Issue'][issue][issue][detail]
-			""" buscar forma de incluir IP si esta disponible"""
 			IP = '-'
 			# loop to retrieve the appropriate description and solution of a certain issue type
 			for vuln in vulns:
@@ -145,7 +144,7 @@ for table in doc.tables:
 	table.rows[1].cells[3]._tc.get_or_add_tcPr().append(shading_elm_1)
 
 if len(sys.argv) != 2:
-	filename = "bbb.docx"
+	filename = "output.docx"
 else:
 	filename = sys.argv[1]
 try:
