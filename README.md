@@ -23,6 +23,11 @@ A couple of clicks will do that for you!!!
 ## Disclaimer
 As far as I have used and tested this extension, both while developing it and for my personal and professional use, it works as it should, but there may be unexpected cases where it doesn't find some header, doesn't properly find unique endpoints or some other minor issues. In any case I don't think you will find many of these outliers, but complicated URLs could cause some problems. If you detect any, feel free to let me know (check the How to contribute section further down below). Also, I advise that you check manually the results provided by this extension, at least a couple of times to get used to how this extension works, and to make sure that you don't report to your client anything that is not actually there. By now I don't check it anymore for my own pentests because I know it works, but use it at your own risk!
 
+## Requirements
+This extension is written in Python, therefore you will need the Jython .jar file set on your Burp Suite configuration. If you don't know how to do that, check my course on Burp Extensions creation (https://medium.com/system-weakness/burp-extensions-creation-1-7ddeb61efb33) or google it, it shouldn't be difficult :)
+
+Also, one of the main components of this extension requires that you install Python 3 on your system (on most linux distros should be included by default, on Windows use the installer from https://www.python.org/downloads/). If everything happens with no problems, this extension should detect your installation of Python and install the docxtpl library, to be able to create the .docx reports. In any case, you can install the library yourself with ``pip install docxtpl``. If the extension cannot find your Python binary path you can set it manually, read item 5 on the Instructions or, create an Issue if it doesn't work for you.
+
 ## Instructions
 1- After you have captured some proxy traffic, switch to the Headers tab and click the Update button. That will fill the left panel with the headers that appear in the requests from your captured traffic, sorted by alphabetical order. If you change to the Response tab, in that same panel, you will see the sorted headers from the captured responses. In both cases, under each header you can see the hosts where that header is present.
 
@@ -54,25 +59,26 @@ Finally, click on the "Choose output file" on the lower left corner to choose th
 6- Enjoy the many hours of manual work that you just saved yourself. Preferably, use these hours to go for a walk or do some exercise instead of gaming, so that the electricity that you save won't pollute the planet, I guess that typing in Word requires less electricity than games to run :)
 
 ## Word template and other customization
-- This extension recalls the configurations that you use, but make sure to "save changes" or "apply changes" in the different config windows, whenever you see such buttons. Doing so, next time you load the extension it will have the same settings you last used. There are also buttons to revert to factory settings.
+1- This extension recalls the configurations that you use, but make sure to "save changes" or "apply changes" in the different config windows, whenever you see such buttons. Doing so, next time you load the extension it will have the same settings you last used. There are also buttons to revert to factory settings.
 
-- You will probably want to use a custom template for the word reports. First, look for the provided template. It is in the /template/template.docx file. If you installed this extension via the Portswigger BApp store, you will find the directory of this extension under ``C:\Users\<youruser>\AppData\Roaming\BurpSuite\bapps``. Then to find it (folders are given weird names, look for some file belonging to this extension, for example, "headers_window.py". Then look for the template).
+2- You will probably want to use a custom template for the word reports. First, look for the provided template. It is in the /template/template.docx file. If you installed this extension via the Portswigger BApp store, you will find the directory of this extension under ``C:\Users\<youruser>\AppData\Roaming\BurpSuite\bapps``. Then to find it (folders are given weird names, look for some file belonging to this extension, for example, "headers_window.py". Then look for the template).
 
 The template contains Jinja2 instructions to replace in each generated table the appropriate values. Notice that the provided template contains a for loop instruction surrounding the table. This means that a different table will be generated for every issue that will be reported. You can skip some of this information if you don't need it. or you can place it in other arrangements. Next is a description of the different fields you can use (include the "{ " before and " }}" after, they are Jinja2 syntax and are necessary.):
-    - ``{{ host[‘headers’]["Name"] }}``: Vulnerability name
-    - ``{{ host[‘headers’]["Host"] }}``: Host name
-    - ``{{ host[‘headers’]["IP"] }}``: Host IP, in case it's available
-    - ``{{ host[‘headers’]["Port"] }}``: Port where the endpoint is
-    - ``{{ host[‘headers’]["Protocol"] }}``: Protocol
-    - ``{{ host[‘headers’]["Severity"] }}``: Severity (Critical, High, Medium or Low)
-    - ``{{ host[‘headers’]["Code"] }}``: In case you use some code to identify vulnerabilities. Not implemented right now.
-    - ``{{ host[‘headers’][“CVSS”] }}``: CVSS value (from 0 to 10)
-    - ``{{ host[‘headers’][“CVSS_image”] }}``: Any image that you want to include to graphically represent the CVSS score
-    - ``{{ host[‘headers’][“Description”] }}``: Vulnerability description
-    - ```{% for url in host[‘headers’][“URLs”] %}
-        -	{{ url }}
-        {%- endfor %}``` in case you want to include a list of endpoints where the vulnerability is found
-    - ``{{ host[‘headers’][“Solution”] }}``: Remediation instructions for the vulnerability
+
+- ``{{ host[‘headers’]["Name"] }}``: Vulnerability name
+- ``{{ host[‘headers’]["Host"] }}``: Host name
+- ``{{ host[‘headers’]["IP"] }}``: Host IP, in case it's available
+- ``{{ host[‘headers’]["Port"] }}``: Port where the endpoint is
+- ``{{ host[‘headers’]["Protocol"] }}``: Protocol
+- ``{{ host[‘headers’]["Severity"] }}``: Severity (Critical, High, Medium or Low)
+- ``{{ host[‘headers’]["Code"] }}``: In case you use some code to identify vulnerabilities. Not implemented right now.
+- ``{{ host[‘headers’][“CVSS”] }}``: CVSS value (from 0 to 10)
+- ``{{ host[‘headers’][“CVSS_image”] }}``: Any image that you want to include to graphically represent the CVSS score
+- ``{{ host[‘headers’][“Description”] }}``: Vulnerability description
+- ```{% for url in host[‘headers’][“URLs”] %}
+    -	{{ url }}
+    {%- endfor %}``` in case you want to include a list of endpoints where the vulnerability is found
+- ``{{ host[‘headers’][“Solution”] }}``: Remediation instructions for the vulnerability
 
 Feel free to modify the template.py file to include any new functionality that is currently not implemented. This script already contains CVSS scores and vectors for the different vulnerabilities, but keep in mind that they could vary for specific conditions. However I think they are a valid approximation in most cases.
 
@@ -84,4 +90,6 @@ So if you add new, or modify the current ones, make sure they are in this format
 If you enjoy this extension, please give a star to the repo: https://github.com/dh0ck/Headers
 I have dedicated many hours to create it, not just to save myself time in the long run, but especially to free pentesters around the world from something that I know we all hate, so that we can dedicate more time to actually doing what we like, and finding more vulns.
 
-If you want to contribute, feel free to add pull requests, or if you have ideas that you would like this extension to include, feel free to write to me on Telegram (@dh0ck) or via LinkedIn (https://www.linkedin.com/in/antonio-lara-55669260/). If I find your idea is feasible I will add it to my to-do list! Let's make this tool save us even more hours of stupid reporting!
+If you want to contribute, feel free to add pull requests, or if you have ideas that you would like this extension to include, feel free to create an Issue on this repo, write to me on Telegram (@dh0ck) or via LinkedIn (https://www.linkedin.com/in/antonio-lara-55669260/). If I find your idea is feasible I will add it to my to-do list! Let's make this tool save us even more hours of stupid reporting!
+
+Thanks again for taking the time to try this extension, hope you find it useful ;)
