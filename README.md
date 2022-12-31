@@ -2,7 +2,9 @@
 
 ## Introduction
 Let me ask you two questions: 
+
 1- Are you a pentester or bug bounty hunter?
+
 2- Do you hate reporting?
 
 If you answered yes to both (and I assume that if you answered "yes" to the first one, you necessarily answered "yes" to the second one), check out this extension. It removes the hassle of reporting missing security headers in your pentest reports. Here is what the extension does (the last part is the best, so read until the end!):
@@ -23,15 +25,15 @@ A couple of clicks will do that for you!!!
 ## Disclaimer
 As far as I have used and tested this extension, both while developing it and for my personal and professional use, it works as it should, but there may be unexpected cases where it doesn't find some header, doesn't properly find unique endpoints or some other minor issues. In any case I don't think you will find many of these outliers, but complicated URLs could cause some problems. If you detect any, feel free to let me know (check the How to contribute section further down below). Also, I advise that you check manually the results provided by this extension, at least a couple of times to get used to how this extension works, and to make sure that you don't report to your client anything that is not actually there. By now I don't check it anymore for my own pentests because I know it works, but use it at your own risk!
 
-![234px-Warning svg](https://user-images.githubusercontent.com/34309036/210150493-a925991c-7ff7-440f-9275-7075357b6131.png)
 
 
-<b>WARNING! I have experienced problems with the docxtpl library on linux! I strongly advise using the Windows version of Burp to benefit from the automatic reporting feature of this extension! In any case, if you are writing Word reports I guess you shold be using Windows at some point, so why not exporting the Burp project from your Linux machine (in case you use Burp on Linux) and importing it on Burp on Windows, where you should be able to generate this report? I guess the same applies to Mac users... Not my fault, sorry, it's the third party library...</b>.
 
 ## Requirements
 This extension is written in Python, therefore you will need the Jython .jar file set on your Burp Suite configuration. If you don't know how to do that, check my course on Burp Extensions creation (https://medium.com/system-weakness/burp-extensions-creation-1-7ddeb61efb33) or google it, it shouldn't be difficult :)
 
 Also, one of the main components of this extension requires that you install Python 3 on your system (on most linux distros should be included by default, on Windows use the installer from https://www.python.org/downloads/). If everything happens with no problems, this extension should detect your installation of Python and install the docxtpl library, to be able to create the .docx reports. In any case, you can install the library yourself with ``pip install docxtpl``. If the extension cannot find your Python binary path you can set it manually, read item 5 on the Instructions or, create an Issue if it doesn't work for you.
+
+In any case, the extension generates an auxiliary file that you can copy to another machine, and generate it there.
 
 ## Instructions
 1- After you have captured some proxy traffic, switch to the Headers tab and click the Update button. That will fill the left panel with the headers that appear in the requests from your captured traffic, sorted by alphabetical order. If you change to the Response tab, in that same panel, you will see the sorted headers from the captured responses. In both cases, under each header you can see the hosts where that header is present.
@@ -61,11 +63,15 @@ Finally, click on the "Choose output file" on the lower left corner to choose th
 
 ![gif5](https://user-images.githubusercontent.com/34309036/210148737-ed530567-875d-4590-a500-0b21c0d968d2.gif)
 
-<b>As mentioned earlier, I have experienced problems generating the Word reports on linux, due to some issue with the docxtpl (not my fault!). So I highly advise to use the Windows version of Burp to profit from this extension. Also, I have noticed that some strange urls, with a lot of symbols can cause problems. If the report is not appearing in the target path, uncheck the longest and weirdest looking URLs, to see if the report appears now. Then, decide if you can skip that URL in your report, or add it manually. It's hard to predict every type of URLs out there, so some cannot be easily parsed, sorry!</b>
+![234px-Warning svg](https://user-images.githubusercontent.com/34309036/210150493-a925991c-7ff7-440f-9275-7075357b6131.png)
+
+<b>WARNING!I have noticed that some strange urls, with a lot of symbols can cause problems. If the report is not appearing in the target path, uncheck the longest and weirdest looking URLs, to see if the report appears now. Then, decide if you can skip that URL in your report, or add it manually. It's hard to predict every type of URLs out there, so some cannot be easily parsed, sorry! As an example, this URL caused me problems when generating the report, so if you see something similar, please uncheck it from the Summary window and try again: ``/rum.js;rAraT1IazsN9CNL_S+tTtSCsOVg=``. In this case the problem was the semicolon between "js" and what comes next, that messed up some string splitting that the code does</b>
 
 6- If you use the example template, or modify it, don't forget to update the figure numbers for the evidences that you can paste later into the report. For that, you can select all text on Word (Ctrl-A, or some other key combination depending on your keyboard language) and then right click on the selection and click on "Update field" (for some keyboard languages, the F9 key also works).
 
 ![gif6](https://user-images.githubusercontent.com/34309036/210150343-dc988795-ff39-41d5-8583-c323fa7bfaf2.gif)
+
+<b>NOTE: You don't need to create the report on the same machine where you have Burp installed. The extension generates the file called output/selected_output.txt file when you click the generate report button. You can copy this file over to another machine that has Python and Docxtpl, and call the script in /template/template.py. To do that, copy the selected_output.txt file to another machine where you have downloaded the repo, and place it in the output/ directory. Then go to the template directory and run: ``python template.py <output path>``, where ``<output path>`` is the absolute or relative path where the report will be saved. If, for example, you do ``python template.py out.docx``, a report called out.docx will be saved in the very same template folder, next to the template.py script.</b>
 
 7- Enjoy the many hours of manual work that you just saved yourself. Preferably, use these hours to go for a walk or do some exercise instead of gaming, so that the electricity that you save won't pollute the planet, I guess that typing in Word requires less electricity than games to run :)
 
