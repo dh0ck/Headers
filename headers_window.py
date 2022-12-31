@@ -313,38 +313,7 @@ class IssueTable(JTable):
         return result'''
 
 
-#este es para los filtros, que al borrar el texto se ponga la hint, pero no funciona, mejor pasar de ello
-'''class HintTextField(JTextField, FocusListener):
 
-  def __init__(self, hint, showingHint):
-    #print('xxx 1')
-    self.hint = hint
-    self.showingHint = showingHint
-
-  def HintTextField(self, hint):
-    #print('xxx 2')
-    self.hint = hint
-    self.showingHint = True
-    super().addFocusListener(self)
-  
-
-  def focusGained(self, event): 
-    #print('xxx 3')
-    if(self.getText().isEmpty()): 
-      super().setText("");
-      self.showingHint = False;
-    
-  
-  def focusLost(self, event): 
-    #print('xxx 4')
-    if(self.getText().isEmpty()):
-      super().setText(hint)
-      self.showingHint = True
-    
-  def getText(self): 
-    #print('xxx 4')
-    #return showingHint ? "" : super().getText()
-    return "" if self.showingHint else super().getText()'''
   
 
 class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
@@ -949,16 +918,23 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def check_python_modules(self, event):
     # subprocess que guarde en una variable output de python -c import ...
     
+    python_path = self.python_path_textfield.getText()
     os_type = sys.platform.getshadow()
     win_python_command = "py --version"
     linux_python_command = 'python3 --version'
     win_python_command = 'py docx.py'
     if 'win' in os_type:
       #proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
-      proc = subprocess.Popen("py --version", stdout=subprocess.PIPE)
+      if python_path != '':
+        proc = subprocess.Popen("{} --version".format(python_path), stdout=subprocess.PIPE)
+      else:
+        proc = subprocess.Popen("py --version", stdout=subprocess.PIPE)
     elif 'linux' in os_type:
       #proc = subprocess.Popen(linux_python_command, stdout=subprocess.PIPE)
-      proc = subprocess.Popen("python3 --version", stdout=subprocess.PIPE)
+      if python_path != '':
+        proc = subprocess.Popen("{} --version".format(python_path), stdout=subprocess.PIPE)
+      else:
+        proc = subprocess.Popen("python3 --version", stdout=subprocess.PIPE)
     else:
       raise("Error identifying operating system type. Provide path to Python3 binary.")
 
@@ -966,8 +942,12 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if 'docxtpl' not in sys.modules.keys():
       os.system('pip install docxtpl')
 
-    docxtpl_version = subprocess.Popen('''python -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"''',stdout=subprocess.PIPE)
+    if python_path != '':
+      docxtpl_version = subprocess.Popen('''{} -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"'''.format(python_path),stdout=subprocess.PIPE)
+    else:
+      docxtpl_version = subprocess.Popen('''python -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"''',stdout=subprocess.PIPE)
 
+    print(python_path)
     output = proc.stdout.read()
     self.python_msg.setText(output.strip('\r\n') + '; ' + docxtpl_version.stdout.read())
 
@@ -985,6 +965,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     c.weightx = 0
     c.gridy = 0
     self.docx_frame.add(JLabel('Make sure your Python3 installation runs on windows by typing "py" on Powershell or python3 or bash'), c)
+    self.docx_frame.add(JLabel('If your python executable is in a custom path, please write it in the next textbox'))
     c.gridy += 1
     c.weightx = 1
     c.fill = GridBagConstraints.HORIZONTAL
@@ -992,6 +973,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.docx_frame.add(self.python_path_textfield, c)
 
     c.gridy += 1
+    self.docx_frame.add(JLabel(' '))
     self.check_python_docx_modules = JButton("Check docx modules", actionPerformed = self.check_python_modules)
     self.docx_frame.add(self.check_python_docx_modules, c)
 
@@ -1046,18 +1028,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     """Name that will be shown in the extension's tab in the Burp interface"""
     return "Headers"
 
-  '''def getToolTipText(self, event):
-    tip = '';
-    #p = getPoint(event);
-    p = event.getPoint();
-    rowIndex = Point.rowAtPoint(p);
-    colIndex = Point.columnAtPoint(p);
-    try:
-      tip = getValueAt(rowIndex, colIndex).toString();
-    except:
-      tip = ""
-    
-    return tip'''
+
 
   def ColorScore(self, value, total, type):
     """ Make a color more intense if more headers of that type are present. To be used in the unique endpoints table."""
@@ -1492,26 +1463,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       except:
         Error_frame3.setVisible(True)
 
-    elif out_type == "TXT: Host -> Endpoint -> Headers":
-      
-      f = open(out_file_name, 'w')
-      for unique_host in unique_hosts:
-        endpoint_already_present = []
-        for item in history1:
-          request = burp_extender_instance._helpers.bytesToString(item.getRequest()).split('\r\n\r\n')[0]
-          req_headers = request.split('\r\n')
-          response = burp_extender_instance._helpers.bytesToString(item.getResponse()).split('\r\n\r\n')[0]
-          resp_headers = response.split('\r\n')
-          for req_head in req_headers:
-            if 'Host: ' in req_head:
-              if unique_host == req_head.split(': ')[1]:
-                endpoint = self.apply_regex(req_headers[0])
-                if endpoint not in endpoint_already_present:
-                  f.write(unique_host + '; ' + endpoint + '; ' + "Request headers: " + str(req_headers[1:]) + " Response headers: " + str(resp_headers[1:]) + '\n')
-                  endpoint_already_present.append(endpoint)
-              else:
-                break
-      f.close() 
 
     elif out_type == "JSON: Host -> Header":
       try:
@@ -1551,19 +1502,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       except:
         Error_frame3.setVisible(True)
 
-    elif out_type == "JSON: Header -> Host ":
-      pass
-      '''f = open(out_file_name, 'w')
-      for line in self.header_host_table:
-        f.write(line)
-      f.close()'''
 
-    elif out_type == "JSON: Header -> Host -> Endpoint":
-      pass
-      '''f = open(out_file_name, 'w')
-      for line in self.header_host_table:
-        f.write(line)
-      f.close()'''
     
     else:
       return
@@ -1903,8 +1842,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       optional_name = " " + self.out_docx_path.getText()
     else:
       optional_name = ""
-    print("python template.py{}".format(optional_name))
-    os.system("python template.py{}".format(optional_name))
+    
+    python_path = self.python_path_textfield.getText()
+    if python_path != '':
+      print("{0} template.py{1}".format(python_path, optional_name))
+      os.system("{1} template.py{}".format(python_path, optional_name))
+    else:
+      # igual esto falla por no poner el py o python3?
+      print("python template.py{}".format(optional_name))
+      os.system("python template.py{}".format(optional_name))
     os.chdir('..')
 
 
@@ -2108,9 +2054,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.depth_textbox = JTextField("Depth (0=all; Default=1)")
 
     self.checkbox_missing_security.setSelected(True)
-    self.checkbox_potentially_dangerous.setSelected(False)
-    self.checkbox_dangerous.setSelected(False)
-    self.checkbox_cookies.setSelected(False)
+    self.checkbox_potentially_dangerous.setSelected(True)
+    self.checkbox_dangerous.setSelected(True)
+    self.checkbox_cookies.setSelected(True)
 
     left_panel.add(self.checkbox_missing_security, c)
     left_panel.add(self.checkbox_potentially_dangerous, c)
@@ -2197,11 +2143,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
 
     self.preset_filters = DefaultComboBoxModel()
     self.preset_filters.addElement("Request + Response + <meta>")
-    self.preset_filters.addElement("Request + Response")
-    self.preset_filters.addElement("In scope only (se puede acceder al scope???)")
-    self.preset_filters.addElement("Security headers only")
-    self.preset_filters.addElement("Potentially dangerous headers only")
-    self.preset_filters.addElement("Dangerous or unnecessary headers only")
 
     c.fill = GridBagConstraints.HORIZONTAL
     c.weightx = 1
@@ -2367,16 +2308,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     self.save_format.addElement("Choose output format")
     self.save_format.addElement("TXT: Host -> Header")
     self.save_format.addElement("TXT: Header -> Host")
-    self.save_format.addElement("TXT: Host -> Endpoint -> Headers")
-    self.save_format.addElement("TXT: Only security headers")
-    self.save_format.addElement("TXT: Only potentially dangerous headers")
-    self.save_format.addElement("TXT: Only dangerous or verbose headers")
     self.save_format.addElement("JSON: Host -> Header")
-    self.save_format.addElement("JSON: Header -> Host ")
-    self.save_format.addElement("JSON: Header -> Host -> Endpoint")
-    self.save_format.addElement("JSON: Only security headers")
-    self.save_format.addElement("JSON: Only potentially dangerous headers")
-    self.save_format.addElement("JSON: Only dangerous or verbose headers")
     self.save_ComboBox = JComboBox(self.save_format)
     JPanel2.add( self.save_ComboBox, c )
 
