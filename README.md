@@ -61,7 +61,7 @@ Finally, click on the "Choose output file" on the lower left corner to choose th
 
 ![gif5](https://user-images.githubusercontent.com/34309036/210148737-ed530567-875d-4590-a500-0b21c0d968d2.gif)
 
-<b>As mentioned earlier, I have experienced problems generating the Word reports on linux, due to some issue with the docxtpl (not my fault!). So I highly advise to use the Windows version of Burp to profit from this extension</b>
+<b>As mentioned earlier, I have experienced problems generating the Word reports on linux, due to some issue with the docxtpl (not my fault!). So I highly advise to use the Windows version of Burp to profit from this extension. Also, I have noticed that some strange urls, with a lot of symbols can cause problems. If the report is not appearing in the target path, uncheck the longest and weirdest looking URLs, to see if the report appears now. Then, decide if you can skip that URL in your report, or add it manually. It's hard to predict every type of URLs out there, so some cannot be easily parsed, sorry!</b>
 
 6- If you use the example template, or modify it, don't forget to update the figure numbers for the evidences that you can paste later into the report. For that, you can select all text on Word (Ctrl-A, or some other key combination depending on your keyboard language) and then right click on the selection and click on "Update field" (for some keyboard languages, the F9 key also works).
 
