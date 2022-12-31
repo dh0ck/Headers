@@ -75,11 +75,13 @@ The template contains Jinja2 instructions to replace in each generated table the
 - ``{{ host[‘headers’][“CVSS”] }}``: CVSS value (from 0 to 10)
 - ``{{ host[‘headers’][“CVSS_image”] }}``: Any image that you want to include to graphically represent the CVSS score
 - ``{{ host[‘headers’][“Description”] }}``: Vulnerability description
-- ```
-    {% for url in host[‘headers’][“URLs”] %}
-    -	{{ url }}
-    {%- endfor %}``` in case you want to include a list of endpoints where the vulnerability is found
 - ``{{ host[‘headers’][“Solution”] }}``: Remediation instructions for the vulnerability
+- in case you want to include a list of endpoints where the vulnerability is found
+  ```
+  {% for url in host[‘headers’][“URLs”] %}
+  -	{{ url }}
+  {%- endfor %}``` 
+
 
 Feel free to modify the template.py file to include any new functionality that is currently not implemented. This script already contains CVSS scores and vectors for the different vulnerabilities, but keep in mind that they could vary for specific conditions. However I think they are a valid approximation in most cases.
 
