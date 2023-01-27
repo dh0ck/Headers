@@ -110,6 +110,6 @@ So if you add new, or modify the current ones, make sure they are in this format
 If you enjoy this extension, please give a star to the repo: https://github.com/dh0ck/Headers
 I have dedicated many hours to create it, not just to save myself time in the long run, but especially to free pentesters around the world from something that I know we all hate, so that we can dedicate more time to actually doing what we like, and finding more vulns.
 
-If you want to contribute, feel free to add pull requests, or if you have ideas that you would like this extension to include, feel free to create an Issue on this repo, write to me on Telegram (@dh0ck) or via LinkedIn (https://www.linkedin.com/in/antonio-lara-55669260/). If I find your idea is feasible I will add it to my to-do list! Let's make this tool save us even more hours of stupid reporting!
+If you want to contribute, feel free to add pull requests, or if you have ideas that you would like this extension to include, feel free to create an Issue on this repo, write to me on Telegram (@dh0ck) or via LinkedIn (https://www.linkedin.com/in/dh0ck). If I find your idea is feasible I will add it to my to-do list! Let's make this tool save us even more hours of stupid reporting!
 
 Thanks again for taking the time to try this extension, hope you find it useful ;)
