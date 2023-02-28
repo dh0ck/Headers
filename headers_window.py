@@ -926,7 +926,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if 'win' in os_type:
       #proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
       if python_path != '':
-        proc = subprocess.Popen(["{}".format(python_path),"--version"], stdout=subprocess.PIPE)
+        proc = subprocess.Popen("{} --version".format(python_path), stdout=subprocess.PIPE)
       else:
         proc = subprocess.Popen(["py","--version"], stdout=subprocess.PIPE)
     elif 'linux' in os_type:
@@ -1080,59 +1080,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       else:
         return "#707070"
 
-  def UpdateHeaders(self, event):
-    """Get the latest version of the request and response headers file from the Github repo. The urllib2 takes some seconds to load, so it's only loaded if this function is ever called, to improve performance."""
-    from urllib2 import urlopen #importo aqui esto para que tarde menos en cargar la extension. esta habia que instalarla o viene con jython por defecto? poner instrucciones si hace falta!!!
-    print("Backing up old header files...")
-    try:
-      req_header_files = glob.glob('request_headers.txt*')
-      resp_header_files = glob.glob('response_headers.txt*')
-      for req_header_file in req_header_files:
-        shutil.copyfile(req_header_file, req_header_file + '~')
-      for resp_header_file in resp_header_files:
-        shutil.copyfile(resp_header_file, resp_header_file + '~')
-      f = open("request_headers.txt")
-      current_req_headers = f.readlines()
-      f.close()
-      f = open("response_headers.txt")
-      current_resp_headers = f.readlines()
-      f.close()
-    except:
-      current_req_headers = []
-      current_resp_headers = []
-
-    # listas auxiliares, sin el newline al final, para que se comparen bien en el "not in" de luego
-    curr_req_headers = []    
-    curr_resp_headers = []
-    for head in current_req_headers:
-      curr_req_headers.append(head.rstrip('\n'))
-    for head in current_resp_headers:
-      curr_resp_headers.append(head.rstrip('\n'))
-
-    del(current_req_headers)
-    del(current_resp_headers)
-
-    last_req_headers = urlopen('https://raw.githubusercontent.com/dh0ck/Headers/main/request_headers.txt').read().split('\n') #probar si en linux necesita solo \n
-    last_resp_headers = urlopen('https://raw.githubusercontent.com/dh0ck/Headers/main/response_headers.txt').read().split('\n')
-    f = open("request_headers.txt","a")
-    for k, head in enumerate(last_req_headers):
-      if head not in curr_req_headers:
-        if k == 0: #por si por algun motivo estuviera vacio el archivo local
-          f.write(head)
-        else:
-          f.write('\n' + head)
-    f.close()
-    f = open("response_headers.txt","a")
-    for k, head in enumerate(last_resp_headers):
-      if head not in curr_resp_headers:
-        if k == 0: #por si por algun motivo estuviera vacio el archivo local
-          f.write(head)
-        else:
-          f.write('\n' + head)
-    f.close()
-
-    return
-
+ 
   def extra_symbol(self, head):
     """Creates the extra symbols for security [+], dangerous [X] and potentially dangrous [?] headers that are shown in the request header summary at the right side of the screen."""
     
@@ -2632,9 +2580,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         except:
           description = " --- Description unavailable --- "
         if req_head_name not in self.aux_names_req:
-          self.tableDataReq.append(['<html><b><font color="{}">'.format(self.color1) + req_head_name + '</b></font></html>', description, host])
+          self.tableDataReq.append([req_head_name, description, host])
         self.aux_names_req.append(req_head_name)
-        self.tableDataReq.putClientProperty("html.disable", None)
+
     
       # ----------------- responses ---------------#
       response = self._helpers.bytesToString(traffic.getResponse()).split('\r\n\r\n')[0]
@@ -2646,9 +2594,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
         except:
           description = " --- Description unavailable --- "
         if resp_head_name not in self.aux_names_resp:
-          self.tableDataResp.append(['<html><b><font color="{}">'.format(self.color1) + resp_head_name + '</b></font></html>', description, host])
+          self.tableDataResp.append([resp_head_name, description, host])
         self.aux_names_resp.append(resp_head_name)
-        self.tableDataResp.putClientProperty("html.disable", None)
+
 
     self.tableDataReq.sort()      
     self.tableDataResp.sort()
@@ -2725,7 +2673,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     y_pos += 1
     c.gridy = y_pos 
     c.anchor = GridBagConstraints.WEST
-    text1 = JLabel("www.github.com/dh0ck/XXX with the generated text, or send it to @dh0ck via telegram.")
+    text1 = JLabel("www.github.com/dh0ck/Headers with the generated text, or send it to @dh0ck via telegram.")
     panelTab3.add(text1 ,c)
 
     c = GridBagConstraints()
@@ -2780,7 +2728,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     y_pos += 1
     c.gridy = y_pos
     but = JButton("submit", actionPerformed = self.pullRequest)
-    but.setToolTipText("Click to generate a new entry. Please, submit it to @dh0ck or create a pull request to XXX. It will be reviewed before approval. Thanks for contributing!!!")
+    but.setToolTipText("Click to generate a new entry. Please, submit it to @dh0ck or create a pull request. It will be reviewed before approval. Thanks for contributing!!!")
     panelTab3.add(but, c)
 
     # ========================== show entry to be submitted ============================== #
@@ -2801,8 +2749,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     
     a1 = "    Thank you for using Headers"
     a2 = "    For tutorials, please visit:"
-    a3 = "    <html><a href = XXX medium>Written tutorial</a></html>"
-    a4 = "    <html><a href = XXX Video>Video tutorial</a></html>"
+    a3 = "    https://github.com/dh0ck/Headers"
+    a4 = " "
     a5 = " "
     a6 = "    If you have requests or suggestions please let me know via telegram (@dh0ck) or send pull requests to the GitHub repo."
     a7 = " "
@@ -2811,7 +2759,6 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     for label in [a1, a2, a3, a4, a5, a6, a7, a8]:
       panelTab4.add(JLabel(label))
 
-    panelTab4.add(JButton("Update headers info", actionPerformed=self.UpdateHeaders))
 
     tabs = JTabbedPane() 
     tabs.addTab('Requests', panelTab1)
