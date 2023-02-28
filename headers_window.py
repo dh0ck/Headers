@@ -926,15 +926,15 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
     if 'win' in os_type:
       #proc = subprocess.Popen(win_python_command, stdout=subprocess.PIPE)
       if python_path != '':
-        proc = subprocess.Popen("{} --version".format(python_path), stdout=subprocess.PIPE)
+        proc = subprocess.Popen(["{}".format(python_path),"--version"], stdout=subprocess.PIPE)
       else:
-        proc = subprocess.Popen("py --version", stdout=subprocess.PIPE)
+        proc = subprocess.Popen(["py","--version"], stdout=subprocess.PIPE)
     elif 'linux' in os_type:
       #proc = subprocess.Popen(linux_python_command, stdout=subprocess.PIPE)
       if python_path != '':
-        proc = subprocess.Popen("{} --version".format(python_path), stdout=subprocess.PIPE)
+        proc = subprocess.Popen(["{}".format(python_path),"--version"], stdout=subprocess.PIPE)
       else:
-        proc = subprocess.Popen("python3 --version", stdout=subprocess.PIPE)
+        proc = subprocess.Popen(["python3","--version"], stdout=subprocess.PIPE)
     else:
       raise("Error identifying operating system type. Provide path to Python3 binary.")
 
@@ -943,9 +943,9 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       os.system('pip install docxtpl')
 
     if python_path != '':
-      docxtpl_version = subprocess.Popen('''{} -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"'''.format(python_path),stdout=subprocess.PIPE)
+      docxtpl_version = subprocess.Popen(["{}".format(python_path),"-c","import docxtpl; print('Docxtpl version:',docxtpl.__version__)"],stdout=subprocess.PIPE)
     else:
-      docxtpl_version = subprocess.Popen('''python -c "import docxtpl; print('Docxtpl version:',docxtpl.__version__)"''',stdout=subprocess.PIPE)
+      docxtpl_version = subprocess.Popen(["python3","-c","import docxtpl; print('Docxtpl version:',docxtpl.__version__)"],stdout=subprocess.PIPE)
 
     print(python_path)
     output = proc.stdout.read()
@@ -1850,8 +1850,8 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
       os.system("{1} template.py{}".format(python_path, optional_name))
     else:
       # igual esto falla por no poner el py o python3?
-      print("python template.py{}".format(optional_name))
-      os.system("python template.py{}".format(optional_name))
+      print("python3 template.py{}".format(optional_name))
+      os.system("python3 template.py{}".format(optional_name))
     os.chdir('..')
 
 
