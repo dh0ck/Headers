@@ -1940,7 +1940,7 @@ class BurpExtender(IBurpExtender, IContextMenuFactory, ITab):
   def create_summary(self):
     self.summary_frame = JFrame("Summary")
     self.summary_frame.setLayout(BorderLayout())
-    self.summary_frame.setSize(1200, 600)
+    self.summary_frame.setSize(1600, 600)
     self.summary_frame.setLocationRelativeTo(None)  
 
     colNames_left = ("Include?", "Host" )
